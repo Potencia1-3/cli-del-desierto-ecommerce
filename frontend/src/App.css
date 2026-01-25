@@ -1,34 +1,217 @@
-.App-logo {
-    height: 40vmin;
-    pointer-events: none;
+/* Additional App-specific styles */
+
+.App {
+    min-height: 100vh;
+    background-color: #050505;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-    .App-logo {
-        animation: App-logo-spin infinite 20s linear;
+/* Page transitions */
+.page-enter {
+    opacity: 0;
+    transform: translateY(10px);
+}
+
+.page-enter-active {
+    opacity: 1;
+    transform: translateY(0);
+    transition: opacity 300ms, transform 300ms;
+}
+
+.page-exit {
+    opacity: 1;
+}
+
+.page-exit-active {
+    opacity: 0;
+    transition: opacity 300ms;
+}
+
+/* Logo styles */
+.logo-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.logo-container img {
+    height: 48px;
+    object-fit: contain;
+}
+
+/* Calendar grid */
+.calendar-grid {
+    display: grid;
+    grid-template-columns: 80px repeat(6, 1fr);
+    gap: 1px;
+    background-color: #262626;
+}
+
+.calendar-time-slot {
+    background-color: #0A0A0A;
+    padding: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: #A1A1AA;
+}
+
+.calendar-session {
+    background-color: #0A0A0A;
+    padding: 4px;
+    min-height: 60px;
+    position: relative;
+}
+
+.calendar-session-item {
+    background: linear-gradient(135deg, rgba(230, 0, 255, 0.2), rgba(230, 0, 255, 0.1));
+    border-left: 3px solid #E600FF;
+    padding: 6px 8px;
+    border-radius: 2px;
+    font-size: 11px;
+    margin-bottom: 2px;
+}
+
+.calendar-session-item.completed {
+    background: linear-gradient(135deg, rgba(0, 229, 255, 0.2), rgba(0, 229, 255, 0.1));
+    border-left-color: #00E5FF;
+    opacity: 0.7;
+}
+
+/* Stats card hover effect */
+.stats-card {
+    transition: all 0.3s ease;
+}
+
+.stats-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 40px rgba(230, 0, 255, 0.1);
+}
+
+/* Table row hover */
+.data-table tbody tr {
+    transition: background-color 0.2s ease;
+}
+
+.data-table tbody tr:hover {
+    background-color: rgba(255, 255, 255, 0.03);
+}
+
+/* Form sections */
+.form-section {
+    background: rgba(10, 10, 10, 0.6);
+    border: 1px solid #262626;
+    border-radius: 4px;
+    padding: 24px;
+    margin-bottom: 16px;
+}
+
+.form-section-title {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 14px;
+    color: #E600FF;
+    margin-bottom: 16px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Progress bar */
+.progress-bar {
+    height: 4px;
+    background-color: #262626;
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #E600FF, #00E5FF);
+    transition: width 0.5s ease;
+}
+
+/* Skeleton loading */
+.skeleton {
+    background: linear-gradient(90deg, #0A0A0A 25%, #121212 50%, #0A0A0A 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite;
+}
+
+@keyframes skeleton-loading {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
     }
 }
 
-.App-header {
-    background-color: #0f0f10;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: calc(10px + 2vmin);
-    color: white;
+/* Mobile menu */
+@media (max-width: 768px) {
+    .mobile-menu {
+        position: fixed;
+        top: 0;
+        left: -280px;
+        width: 280px;
+        height: 100vh;
+        background-color: #0A0A0A;
+        z-index: 50;
+        transition: left 0.3s ease;
+        border-right: 1px solid #262626;
+    }
+    
+    .mobile-menu.open {
+        left: 0;
+    }
+    
+    .mobile-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.7);
+        z-index: 40;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+    }
+    
+    .mobile-overlay.open {
+        opacity: 1;
+        pointer-events: auto;
+    }
 }
 
-.App-link {
-    color: #61dafb;
+/* Tooltip */
+.custom-tooltip {
+    background-color: #121212 !important;
+    border: 1px solid #262626 !important;
+    border-radius: 4px !important;
+    padding: 8px 12px !important;
+    font-size: 12px !important;
 }
 
-@keyframes App-logo-spin {
+/* Chart customization */
+.recharts-cartesian-grid-horizontal line,
+.recharts-cartesian-grid-vertical line {
+    stroke: rgba(255, 255, 255, 0.05);
+}
+
+.recharts-text {
+    fill: #A1A1AA;
+    font-size: 12px;
+}
+
+/* Dropdown animation */
+.dropdown-content {
+    animation: dropdown-in 0.2s ease;
+}
+
+@keyframes dropdown-in {
     from {
-        transform: rotate(0deg);
+        opacity: 0;
+        transform: translateY(-8px);
     }
     to {
-        transform: rotate(360deg);
+        opacity: 1;
+        transform: translateY(0);
     }
 }
