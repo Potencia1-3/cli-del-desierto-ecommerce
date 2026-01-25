@@ -217,7 +217,7 @@ export default function Sales() {
                 <Button 
                   onClick={handleCreateSale} 
                   className="btn-primary" 
-                  disabled={saving || !saleForm.client_id || !saleForm.description || !saleForm.amount}
+                  disabled={saving || saleForm.client_id === '' || saleForm.description.trim() === '' || saleForm.amount === '' || parseFloat(saleForm.amount) <= 0}
                   data-testid="save-sale-btn"
                 >
                   {saving ? 'Guardando...' : 'Registrar Venta'}
