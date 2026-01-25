@@ -1,0 +1,127 @@
+{
+  "brand_identity": {
+    "name": "Pump Fit Electro Stimulation Club",
+    "theme_mode": "dark",
+    "colors": {
+      "primary": "#E600FF",
+      "secondary": "#00E5FF",
+      "background": "#050505",
+      "surface": "#0A0A0A",
+      "surface_highlight": "#121212",
+      "text_primary": "#FFFFFF",
+      "text_secondary": "#A1A1AA",
+      "border": "#262626",
+      "success": "#00E5FF",
+      "error": "#FF0055",
+      "warning": "#FFB800"
+    },
+    "typography": {
+      "headings": {
+        "family": "Unbounded, sans-serif",
+        "weights": ["400", "600", "800"],
+        "usage": "Main titles, section headers, big metrics"
+      },
+      "body": {
+        "family": "Manrope, sans-serif",
+        "weights": ["400", "500", "700"],
+        "usage": "Paragraphs, UI labels, form inputs"
+      },
+      "mono": {
+        "family": "JetBrains Mono, monospace",
+        "usage": "IDs, time slots, technical data"
+      }
+    },
+    "logo_url": "https://customer-assets.emergentagent.com/job_45d77d8f-2afe-4a7b-9bc9-afe465e1f07c/artifacts/1z71m00b_IMG-20260123-WA0036.jpg"
+  },
+  "ui_components": {
+    "buttons": {
+      "style": "sharp",
+      "radius": "rounded-sm",
+      "variants": {
+        "default": "bg-[#E600FF] text-white hover:bg-[#E600FF]/80 hover:shadow-[0_0_20px_rgba(230,0,255,0.5)] transition-all duration-300",
+        "outline": "border border-[#00E5FF] text-[#00E5FF] hover:bg-[#00E5FF]/10 hover:shadow-[0_0_15px_rgba(0,229,255,0.3)]",
+        "ghost": "hover:bg-white/5 text-white"
+      }
+    },
+    "cards": {
+      "style": "glass",
+      "base_class": "bg-black/40 backdrop-blur-xl border border-white/10 shadow-2xl",
+      "hover_effect": "hover:border-[#E600FF]/50 transition-colors duration-300"
+    },
+    "inputs": {
+      "style": "minimal",
+      "base_class": "bg-white/5 border-white/10 focus:border-[#00E5FF] focus:ring-1 focus:ring-[#00E5FF] text-white placeholder:text-white/30 rounded-sm h-12"
+    },
+    "badges": {
+      "variants": {
+        "status_active": "bg-[#00E5FF]/10 text-[#00E5FF] border border-[#00E5FF]/20",
+        "status_pending": "bg-yellow-500/10 text-yellow-500 border border-yellow-500/20",
+        "status_error": "bg-[#FF0055]/10 text-[#FF0055] border border-[#FF0055]/20"
+      }
+    }
+  },
+  "layout_strategies": {
+    "dashboard_grid": {
+      "type": "bento_dense",
+      "classes": "grid grid-cols-1 md:grid-cols-4 gap-4 p-4 md:p-6",
+      "rules": "Use col-span-2 for main charts, col-span-1 for metrics. Fill all gaps."
+    },
+    "schedule_view": {
+      "type": "timeline_vertical",
+      "slot_height": "h-24",
+      "active_indicator": "border-l-4 border-[#E600FF] bg-[#E600FF]/5"
+    },
+    "marketing_hero": {
+      "type": "asymmetric_split",
+      "classes": "min-h-[80vh] flex flex-col md:flex-row items-center justify-between gap-12 relative overflow-hidden"
+    }
+  },
+  "image_assets": {
+    "hero_background": {
+      "url": "https://images.unsplash.com/photo-1764258560214-71d5f28852d0?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Njd8MHwxfHNlYXJjaHwyfHxuZW9uJTIwZ3ltJTIwaW50ZXJpb3IlMjBkYXJrJTIwY3liZXJwdW5rfGVufDB8fHx8MTc2OTM0NTYyNnww&ixlib=rb-4.1.0&q=85",
+      "alt": "Abstract Neon Lines Background",
+      "usage": "Hero section background with overlay"
+    },
+    "ems_workout": {
+      "url": "https://images.pexels.com/photos/6551138/pexels-photo-6551138.jpeg",
+      "alt": "Person in EMS suit",
+      "usage": "Service explanation, landing page feature"
+    },
+    "gym_interior": {
+      "url": "https://images.unsplash.com/photo-1581986358940-80f75484cf09?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Njd8MHwxfHNlYXJjaHwxfHxuZW9uJTIwZ3ltJTIwaW50ZXJpb3IlMjBkYXJrJTIwY3liZXJwdW5rfGVufDB8fHx8MTc2OTM0NTYyNnww&ixlib=rb-4.1.0&q=85",
+      "alt": "Dark Neon Gym Vibe",
+      "usage": "About section, login background"
+    },
+    "trainer_tablet": {
+      "url": "https://images.pexels.com/photos/6922116/pexels-photo-6922116.jpeg",
+      "alt": "Trainer using tablet",
+      "usage": "Admin portal promo, features section"
+    }
+  },
+  "motion_guidelines": {
+    "page_transition": {
+      "initial": { "opacity": 0, "y": 20 },
+      "animate": { "opacity": 1, "y": 0 },
+      "exit": { "opacity": 0, "y": -20 },
+      "transition": { "duration": 0.4, "ease": "easeOut" }
+    },
+    "hover_scale": "hover:scale-[1.02] active:scale-[0.98] transition-transform duration-200"
+  },
+  "instructions_to_main_agent": [
+    "INSTALL FONTS: Add '@import url(\"https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;800&family=Manrope:wght@400;500;700&family=JetBrains+Mono:wght@400&display=swap\");' to index.css",
+    "SETUP TAILWIND: Update tailwind.config.js to include the custom colors (primary: #E600FF, secondary: #00E5FF) and fonts.",
+    "DARK MODE DEFAULT: Ensure the app defaults to dark mode. Add 'dark' class to html/body.",
+    "GLASSMORPHISM: Use the 'cards.base_class' for all main containers (Dashboard widgets, Forms).",
+    "NEON ACCENTS: Use the primary color (#E600FF) for Call-to-Actions and active states. Use secondary (#00E5FF) for data visualization and success states.",
+    "NO ROUNDED CORNERS: Keep border-radius small (rounded-sm) or none to maintain the 'Cyber/Tech' aesthetic.",
+    "DATA VISUALIZATION: Use Recharts with the custom color palette. Ensure grid lines are very subtle (white/5).",
+    "CALENDAR: The 18-minute slot logic is critical. Visually separate these slots clearly in the UI."
+  ],
+  "universal_guidelines": [
+    "Do not use gradients for text unless it is a very large headline.",
+    "Avoid pure black (#000000) for backgrounds; use #050505 or #0A0A0A to reduce eye strain while maintaining depth.",
+    "Always add 'data-testid' to interactive elements.",
+    "Use 'sonner' for notifications.",
+    "Ensure all text has sufficient contrast against the dark backgrounds (WCAG AA)."
+  ]
+}
