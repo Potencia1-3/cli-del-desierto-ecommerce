@@ -668,6 +668,55 @@ async def get_today_schedule(current_user: dict = Depends(require_admin)):
 
 # ==================== CLIENT PORTAL ROUTES ====================
 
+class ClientRegister(BaseModel):
+    email: str
+    password: str
+    name: str
+    phone: str
+    birth_date: Optional[str] = None
+
+@api_router.post("/portal/register")
+async def register_client(data: ClientRegister):
+    """Register a new client with user account"""
+    # Check if email exists
+    existing_user = await db.users.find_one({"email": data.email})
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Este email ya está registrado")
+    
+    # Create user account
+    user = User(
+        email=data.email,
+        name=data.name,
+        phone=data.phone,
+        role="client"
+    )
+    user_dict = user.model_dump()
+    user_dict["password_hash"] = hash_password(data.password)
+    user_dict["created_at"] = user_dict["created_at"].isoformat()
+    await db.users.insert_one(user_dict)
+    
+    # Create client profile
+    client = Client(
+        user_id=user.id,
+        email=data.email,
+        name=data.name,
+        phone=data.phone,
+        birth_date=data.birth_date
+    )
+    client_dict = client.model_dump()
+    client_dict["created_at"] = client_dict["created_at"].isoformat()
+    client_dict["medical_history"]["last_updated"] = client_dict["medical_history"]["last_updated"].isoformat()
+    await db.clients.insert_one(client_dict)
+    
+    # Generate token
+    token = create_token(user.id, user.role)
+    
+    return {
+        "token": token,
+        "user": {"id": user.id, "email": user.email, "name": user.name, "role": user.role},
+        "client_id": client.id
+    }
+
 @api_router.get("/portal/my-info")
 async def get_my_client_info(current_user: dict = Depends(get_current_user)):
     client = await db.clients.find_one({"user_id": current_user["id"]}, {"_id": 0})
@@ -684,7 +733,60 @@ async def get_my_client_info(current_user: dict = Depends(get_current_user)):
         "status": {"$in": ["scheduled", "rescheduled"]}
     }, {"_id": 0}).sort("date", 1).to_list(100)
     
-    return {**client, "active_packages": packages, "upcoming_sessions": sessions}
+    # Get all sessions for history (including completed)
+    all_sessions = await db.sessions.find({
+        "client_id": client["id"]
+    }, {"_id": 0}).sort("date", -1).to_list(100)
+    
+    return {**client, "active_packages": packages, "upcoming_sessions": sessions, "session_history": all_sessions}
+
+@api_router.get("/portal/my-progress")
+async def get_my_progress(current_user: dict = Depends(get_current_user)):
+    """Get client's progress data (measurements over time)"""
+    client = await db.clients.find_one({"user_id": current_user["id"]}, {"_id": 0})
+    if not client:
+        client = await db.clients.find_one({"email": current_user["email"]}, {"_id": 0})
+    
+    if not client:
+        raise HTTPException(status_code=404, detail="Perfil de cliente no encontrado")
+    
+    # Get completed sessions count
+    completed_sessions = await db.sessions.count_documents({
+        "client_id": client["id"],
+        "status": "completed"
+    })
+    
+    # Get total sessions purchased
+    packages = await db.packages.find({"client_id": client["id"]}, {"_id": 0}).to_list(100)
+    total_purchased = sum(p["total_sessions"] for p in packages)
+    total_remaining = sum(p["remaining_sessions"] for p in packages if p["status"] == "active")
+    
+    return {
+        "measurements": client.get("measurements", []),
+        "completed_sessions": completed_sessions,
+        "total_sessions_purchased": total_purchased,
+        "remaining_sessions": total_remaining,
+        "medical_history": client.get("medical_history", {})
+    }
+
+@api_router.get("/portal/available-slots")
+async def get_available_slots(date: str, current_user: dict = Depends(get_current_user)):
+    """Get available time slots for a specific date"""
+    # Get all booked sessions for that date
+    booked = await db.sessions.find({
+        "date": date,
+        "status": {"$in": ["scheduled", "rescheduled"]}
+    }, {"_id": 0, "time": 1, "suit_number": 1}).to_list(1000)
+    
+    # Create availability map
+    availability = {}
+    for slot in TIME_SLOTS:
+        suits_booked = [s["suit_number"] for s in booked if s["time"] == slot]
+        available_suits = [i for i in range(1, 7) if i not in suits_booked]
+        if available_suits:
+            availability[slot] = available_suits
+    
+    return availability
 
 # ==================== INIT ====================
 
