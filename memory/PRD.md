@@ -101,3 +101,25 @@ CRM para Pump Fit Electro Stimulation Club donde los clientes puedan agendar ses
 
 ## Credentials
 - Admin: admin@pumpfit.com / admin123
+
+---
+## Update: January 26, 2026 - Portal de Cliente
+
+### New Features Added:
+- **Portal de Cliente** (/cliente y /portal)
+  - Registro de nuevos clientes (crea usuario + perfil automáticamente)
+  - Login exclusivo para clientes
+  - Vista de sesiones: próximas y historial
+  - Vista de progreso: medidas corporales con comparación
+  - Vista de paquetes activos con barra de progreso
+  - Vista de perfil personal
+  - Agendamiento inteligente mostrando solo slots disponibles
+
+### API Endpoints Added:
+- `POST /api/portal/register` - Registro de cliente
+- `GET /api/portal/my-progress` - Datos de progreso
+- `GET /api/portal/available-slots` - Slots disponibles por fecha
+
+### Access URLs:
+- Administrador: /login
+- Clientes: /cliente (login/registro) → /portal (dashboard)
