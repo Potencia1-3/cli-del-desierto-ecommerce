@@ -88,6 +88,15 @@ export const getTodaySchedule = () =>
 export const getMyInfo = () => 
   axios.get(`${API}/portal/my-info`);
 
+export const getMyProgress = () => 
+  axios.get(`${API}/portal/my-progress`);
+
+export const getAvailableSlots = (date) => 
+  axios.get(`${API}/portal/available-slots?date=${date}`);
+
+export const registerClient = (data) => 
+  axios.post(`${API}/portal/register`, data);
+
 // Init
 export const initAdmin = () => 
   axios.post(`${API}/init/admin`);
