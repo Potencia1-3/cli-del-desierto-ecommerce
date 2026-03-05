@@ -33,11 +33,19 @@ security = HTTPBearer()
 
 # ==================== MODELS ====================
 
+# Roles: superadmin (full control), admin (manage all), reception (front desk - limited), client
+ROLES = {
+    "superadmin": {"level": 100, "name": "Super Administrador"},
+    "admin": {"level": 80, "name": "Administrador"},
+    "reception": {"level": 50, "name": "Mostrador"},
+    "client": {"level": 10, "name": "Cliente"}
+}
+
 class UserBase(BaseModel):
     email: str
     name: str
     phone: Optional[str] = None
-    role: str = "client"  # admin, staff, client
+    role: str = "client"  # superadmin, admin, reception, client
 
 class UserCreate(UserBase):
     password: str
@@ -50,6 +58,25 @@ class User(UserBase):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+# Shift/Turn model for reception cash register
+class Shift(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    user_name: str
+    start_time: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    end_time: Optional[datetime] = None
+    starting_cash: float = 0
+    sales_total: float = 0
+    sales_count: int = 0
+    cash_sales: float = 0
+    card_sales: float = 0
+    transfer_sales: float = 0
+    final_cash: Optional[float] = None
+    difference: Optional[float] = None
+    notes: str = ""
+    status: str = "open"  # open, closed
 
 class ClientMedicalHistory(BaseModel):
     conditions: List[str] = []
