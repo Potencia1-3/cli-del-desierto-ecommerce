@@ -907,6 +907,72 @@ export default function ClientProfile() {
           </div>
         </TabsContent>
 
+        {/* Referrals Tab */}
+        <TabsContent value="referrals">
+          <Card className="glass-card p-6">
+            <h3 className="font-unbounded text-lg text-white mb-6">Referidos del Cliente</h3>
+            
+            {/* Progress */}
+            <div className="bg-pf-surface p-4 rounded-sm mb-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-pf-text-secondary">Progreso de referidos</span>
+                <span className="text-white font-mono">{client?.referrals?.length || 0} / 3</span>
+              </div>
+              <div className="progress-bar">
+                <div 
+                  className="progress-bar-fill" 
+                  style={{ width: `${Math.min(((client?.referrals?.length || 0) / 3) * 100, 100)}%` }}
+                />
+              </div>
+            </div>
+
+            {/* Referrals List */}
+            {!client?.referrals?.length ? (
+              <div className="text-center py-8">
+                <Users className="mx-auto text-pf-text-secondary mb-4" size={48} />
+                <p className="text-pf-text-secondary">Este cliente no ha agregado referidos</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {client.referrals.map((ref, i) => (
+                  <div key={ref.id || i} className="flex items-center justify-between p-4 bg-pf-surface rounded-sm border border-pf-border">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-pf-primary/20 flex items-center justify-center">
+                        <User className="text-pf-primary" size={20} />
+                      </div>
+                      <div>
+                        <p className="text-white font-medium">{ref.name}</p>
+                        <p className="text-pf-text-secondary text-sm">{ref.phone}</p>
+                        {ref.email && <p className="text-pf-text-secondary text-xs">{ref.email}</p>}
+                        {ref.notes && <p className="text-pf-text-secondary text-xs italic mt-1">"{ref.notes}"</p>}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Select
+                        value={ref.status}
+                        onValueChange={(value) => handleUpdateReferralStatus(ref.id, value)}
+                      >
+                        <SelectTrigger className={`w-32 h-8 text-xs ${
+                          ref.status === 'converted' ? 'bg-green-500/20 border-green-500/30 text-green-500' :
+                          ref.status === 'contacted' ? 'bg-pf-warning/20 border-pf-warning/30 text-pf-warning' :
+                          'bg-white/10 border-white/20 text-white'
+                        }`}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-pf-surface border-pf-border">
+                          <SelectItem value="pending" className="text-white hover:bg-pf-primary/20">Pendiente</SelectItem>
+                          <SelectItem value="contacted" className="text-pf-warning hover:bg-pf-primary/20">Contactado</SelectItem>
+                          <SelectItem value="converted" className="text-green-500 hover:bg-pf-primary/20">Inscrito</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+        </TabsContent>
+
         {/* Medical Tab */}
         <TabsContent value="medical">
           <Card className="glass-card p-6">
