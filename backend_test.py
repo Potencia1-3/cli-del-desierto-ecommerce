@@ -7,12 +7,14 @@ class PumpFitCRMTester:
     def __init__(self, base_url="https://agenda-ventas.preview.emergentagent.com"):
         self.base_url = base_url
         self.token = None
+        self.client_token = None
         self.tests_run = 0
         self.tests_passed = 0
         self.client_id = None
         self.package_id = None
         self.session_id = None
         self.sale_id = None
+        self.referral_id = None
 
     def run_test(self, name, method, endpoint, expected_status, data=None, headers=None):
         """Run a single API test"""
