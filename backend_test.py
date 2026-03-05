@@ -234,15 +234,24 @@ class PumpFitCRMTester:
         return success
 
     def test_get_time_slots(self):
-        """Test get time slots"""
+        """Test get time slots - should return 30-minute intervals"""
         success, response = self.run_test(
-            "Get Time Slots",
+            "Get Time Slots (30-min intervals)",
             "GET",
             "sessions/time-slots",
             200
         )
         if success:
             print(f"   Found {len(response)} time slots")
+            # Verify 30-minute intervals
+            if len(response) > 0:
+                print(f"   First slot: {response[0]}")
+                print(f"   Last slot: {response[-1]}")
+                # Should have slots from 9:00 to 18:30 (30-min intervals)
+                expected_count = 20  # (19:00 - 9:00) / 0.5 hours
+                if len(response) != expected_count:
+                    print(f"   ❌ Expected {expected_count} slots for 30-min intervals, got {len(response)}")
+                    return False
         return success
 
     def test_create_session(self):
