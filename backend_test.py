@@ -521,9 +521,15 @@ def main():
         ("Login", tester.test_login),
         ("Get Current User", tester.test_get_me),
         ("Dashboard Stats", tester.test_dashboard_stats),
+        ("Get Package Types", tester.test_get_package_types),
         ("Create Client", tester.test_create_client),
         ("Get Clients", tester.test_get_clients),
         ("Get Client Detail", tester.test_get_client_detail),
+        ("Pay Inscription", tester.test_pay_inscription),
+        ("Add Nutrition Plan", tester.test_add_nutrition_plan),
+        ("Activate Client Profile", tester.test_activate_client_profile),
+        ("Add Referral", tester.test_add_referral),
+        ("Get Referrals", tester.test_get_referrals),
         ("Create Package", tester.test_create_package),
         ("Get Packages", tester.test_get_packages),
         ("Get Time Slots", tester.test_get_time_slots),
@@ -533,6 +539,8 @@ def main():
         ("Get Sales", tester.test_get_sales),
         ("Sales Summary", tester.test_sales_summary),
         ("Complete Session", tester.test_complete_session),
+        ("Client Login", tester.test_client_login),
+        ("Client Portal Info", tester.test_client_portal_info),
     ]
     
     failed_tests = []
