@@ -155,8 +155,44 @@ class PumpFitCRMTester:
         )
         return success
 
+    def test_get_package_types(self):
+        """Test get package types with new pricing structure"""
+        success, response = self.run_test(
+            "Get Package Types (New Pricing)",
+            "GET",
+            "packages/types",
+            200
+        )
+        if success:
+            packages = response.get('packages', {})
+            inscription_price = response.get('inscription_price')
+            nutrition_price = response.get('nutrition_plan_price')
+            
+            print(f"   Inscription Price: ${inscription_price}")
+            print(f"   Nutrition Plan Price: ${nutrition_price}")
+            
+            # Verify new package structure
+            expected_packages = ["8", "24", "50", "annual"]
+            for pkg_type in expected_packages:
+                if pkg_type in packages:
+                    pkg = packages[pkg_type]
+                    print(f"   {pkg['name']}: Promo ${pkg['promo_price']} / Normal ${pkg['normal_price']}")
+                else:
+                    print(f"   ❌ Missing package type: {pkg_type}")
+                    return False
+            
+            # Verify specific prices from requirements
+            if packages.get('8', {}).get('promo_price') != 2700:
+                print(f"   ❌ 8 sessions promo price should be $2700, got ${packages.get('8', {}).get('promo_price')}")
+                return False
+            if packages.get('8', {}).get('normal_price') != 4000:
+                print(f"   ❌ 8 sessions normal price should be $4000, got ${packages.get('8', {}).get('normal_price')}")
+                return False
+                
+        return success
+
     def test_create_package(self):
-        """Test package creation"""
+        """Test package creation with new pricing"""
         if not self.client_id:
             print("❌ No client ID available for package test")
             return False
@@ -164,11 +200,11 @@ class PumpFitCRMTester:
         package_data = {
             "client_id": self.client_id,
             "package_type": "8",
-            "price": 1500.0,
-            "notes": "Test package"
+            "use_promo_price": True,
+            "notes": "Test package with promo pricing"
         }
         success, response = self.run_test(
-            "Create Package",
+            "Create Package (Promo Price)",
             "POST",
             "packages",
             200,
@@ -176,7 +212,13 @@ class PumpFitCRMTester:
         )
         if success and 'package_id' in response:
             self.package_id = response['package_id']
+            expected_price = 2700  # 8 sessions promo price
+            actual_price = response.get('price')
             print(f"   Package ID: {self.package_id}")
+            print(f"   Price: ${actual_price} (expected ${expected_price})")
+            if actual_price != expected_price:
+                print(f"   ❌ Price mismatch!")
+                return False
         return success
 
     def test_get_packages(self):
