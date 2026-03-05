@@ -516,7 +516,7 @@ export default function ClientProfile() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-pf-text-secondary">Traje (1-6)</Label>
+                  <Label className="text-pf-text-secondary">Traje (1-{NUM_SUITS})</Label>
                   <Select
                     value={sessionForm.suit_number}
                     onValueChange={(value) => setSessionForm({...sessionForm, suit_number: value})}
@@ -525,7 +525,7 @@ export default function ClientProfile() {
                       <SelectValue placeholder="Seleccionar traje" />
                     </SelectTrigger>
                     <SelectContent className="bg-pf-surface border-pf-border">
-                      {[1, 2, 3, 4, 5, 6].map((num) => (
+                      {Array.from({length: NUM_SUITS}, (_, i) => i + 1).map((num) => (
                         <SelectItem key={num} value={String(num)} className="text-white hover:bg-pf-primary/20">
                           Traje {num}
                         </SelectItem>
