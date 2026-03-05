@@ -37,7 +37,7 @@ import {
 } from '../components/ui/popover';
 import { toast } from 'sonner';
 
-const SUITS = [1, 2, 3, 4, 5, 6];
+const SUITS = [1, 2];  // Only 2 suits available
 const DAYS = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
 
 export default function Calendar() {
