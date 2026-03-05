@@ -180,7 +180,7 @@ class SessionCreate(BaseModel):
     package_id: str
     date: str  # YYYY-MM-DD
     time: str  # HH:MM
-    suit_number: int  # 1-6
+    suit_number: int  # 1-2 (only 2 suits)
 
 class SessionUpdate(BaseModel):
     date: Optional[str] = None
