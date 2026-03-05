@@ -372,24 +372,36 @@ async def add_measurement(client_id: str, measurement: BodyMeasurement, current_
 
 # ==================== PACKAGE ROUTES ====================
 
+@api_router.get("/packages/types")
+async def get_package_types():
+    """Get all available package types with prices"""
+    return {
+        "packages": PACKAGE_TYPES,
+        "inscription_price": INSCRIPTION_PRICE,
+        "nutrition_plan_price": NUTRITION_PLAN_PRICE
+    }
+
 @api_router.post("/packages")
 async def create_package(package_data: PackageCreate, current_user: dict = Depends(require_admin)):
     if package_data.package_type not in PACKAGE_TYPES:
         raise HTTPException(status_code=400, detail="Tipo de paquete inválido")
     
     pkg_info = PACKAGE_TYPES[package_data.package_type]
+    price = pkg_info["promo_price"] if package_data.use_promo_price else pkg_info["normal_price"]
+    
     package = Package(
         client_id=package_data.client_id,
         package_type=package_data.package_type,
         total_sessions=pkg_info["sessions"],
         remaining_sessions=pkg_info["sessions"],
         max_reschedules=pkg_info["max_reschedules"],
-        price=package_data.price,
+        price=price,
         notes=package_data.notes
     )
     
     package_dict = package.model_dump()
     package_dict["created_at"] = package_dict["created_at"].isoformat()
+    package_dict["use_promo_price"] = package_data.use_promo_price
     
     await db.packages.insert_one(package_dict)
     
@@ -397,8 +409,8 @@ async def create_package(package_data: PackageCreate, current_user: dict = Depen
     sale = Sale(
         client_id=package_data.client_id,
         package_id=package.id,
-        description=f"Venta: {pkg_info['name']}",
-        amount=package_data.price,
+        description=f"Venta: {pkg_info['name']} ({'Promoción' if package_data.use_promo_price else 'Precio Normal'})",
+        amount=price,
         payment_method="cash",
         created_by=current_user["id"]
     )
@@ -406,7 +418,13 @@ async def create_package(package_data: PackageCreate, current_user: dict = Depen
     sale_dict["created_at"] = sale_dict["created_at"].isoformat()
     await db.sales.insert_one(sale_dict)
     
-    return {"message": "Paquete creado", "package_id": package.id}
+    # Activate client profile if not active
+    await db.clients.update_one(
+        {"id": package_data.client_id},
+        {"$set": {"profile_active": True}}
+    )
+    
+    return {"message": "Paquete creado y perfil activado", "package_id": package.id, "price": price}
 
 @api_router.get("/packages")
 async def get_packages(client_id: Optional[str] = None, status: Optional[str] = None, current_user: dict = Depends(require_admin)):
