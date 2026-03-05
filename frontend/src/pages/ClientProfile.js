@@ -272,15 +272,15 @@ export default function ClientProfile() {
   const handleCreatePackage = async () => {
     setSaving(true);
     try {
-      await createPackage({
+      const result = await createPackage({
         client_id: id,
         package_type: packageForm.package_type,
-        price: parseFloat(packageForm.price),
+        use_promo_price: packageForm.use_promo_price,
         notes: packageForm.notes
       });
-      toast.success('Paquete creado exitosamente');
+      toast.success(`Paquete creado - ${formatCurrency(result.data.price)}`);
       setPackageDialogOpen(false);
-      setPackageForm({ package_type: '', price: '', notes: '' });
+      setPackageForm({ package_type: '', use_promo_price: true, notes: '' });
       fetchClient();
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Error al crear paquete');
