@@ -276,9 +276,25 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     return user
 
 async def require_admin(current_user: dict = Depends(get_current_user)):
-    if current_user["role"] not in ["admin", "staff"]:
+    """Requires admin, superadmin or reception role"""
+    if current_user["role"] not in ["admin", "superadmin", "reception"]:
         raise HTTPException(status_code=403, detail="Acceso denegado")
     return current_user
+
+async def require_superadmin(current_user: dict = Depends(get_current_user)):
+    """Only superadmin"""
+    if current_user["role"] != "superadmin":
+        raise HTTPException(status_code=403, detail="Solo Super Administrador")
+    return current_user
+
+async def require_admin_or_above(current_user: dict = Depends(get_current_user)):
+    """Admin or superadmin (not reception)"""
+    if current_user["role"] not in ["admin", "superadmin"]:
+        raise HTTPException(status_code=403, detail="Acceso denegado - Solo Administradores")
+    return current_user
+
+def get_user_role_level(role: str) -> int:
+    return ROLES.get(role, {}).get("level", 0)
 
 # ==================== AUTH ROUTES ====================
 
