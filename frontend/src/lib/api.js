@@ -29,11 +29,40 @@ export const getPackages = (clientId = null, status = null) => {
   return axios.get(`${API}/packages?${params.toString()}`);
 };
 
+export const getPackageTypes = () => 
+  axios.get(`${API}/packages/types`);
+
 export const createPackage = (data) => 
   axios.post(`${API}/packages`, data);
 
 export const getPackage = (id) => 
   axios.get(`${API}/packages/${id}`);
+
+// Client Management
+export const payInscription = (clientId, paymentMethod = 'cash') => 
+  axios.post(`${API}/clients/${clientId}/pay-inscription?payment_method=${paymentMethod}`);
+
+export const addNutritionPlan = (clientId, paymentMethod = 'cash') => 
+  axios.post(`${API}/clients/${clientId}/nutrition-plan?payment_method=${paymentMethod}`);
+
+export const activateClient = (clientId) => 
+  axios.post(`${API}/clients/${clientId}/activate`);
+
+export const deactivateClient = (clientId) => 
+  axios.post(`${API}/clients/${clientId}/deactivate`);
+
+// Referrals
+export const addReferral = (clientId, data) => 
+  axios.post(`${API}/clients/${clientId}/referrals`, data);
+
+export const getReferrals = (clientId) => 
+  axios.get(`${API}/clients/${clientId}/referrals`);
+
+export const updateReferralStatus = (clientId, referralId, status) => 
+  axios.put(`${API}/clients/${clientId}/referrals/${referralId}/status?status=${status}`);
+
+export const getAllReferrals = () => 
+  axios.get(`${API}/referrals/all`);
 
 // Sessions
 export const getTimeSlots = () => 
