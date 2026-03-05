@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 import json
 
 class ClientPortalTester:
-    def __init__(self, base_url="https://agenda-ventas.preview.emergentagent.com"):
+    def __init__(self, base_url="https://client-scheduler-crm.preview.emergentagent.com"):
         self.base_url = base_url
         self.client_token = None
         self.admin_token = None

@@ -8,18 +8,32 @@ import {
   DollarSign, 
   LogOut,
   Menu,
-  X
+  X,
+  Shield,
+  Monitor
 } from 'lucide-react';
 import { Button } from './ui/button';
+import { Badge } from './ui/badge';
 
 const LOGO_URL = "https://customer-assets.emergentagent.com/job_45d77d8f-2afe-4a7b-9bc9-afe465e1f07c/artifacts/1z71m00b_IMG-20260123-WA0036.jpg";
 
-const navItems = [
-  { path: '/', icon: LayoutDashboard, label: 'Dashboard' },
-  { path: '/clients', icon: Users, label: 'Clientes' },
-  { path: '/calendar', icon: Calendar, label: 'Calendario' },
-  { path: '/sales', icon: DollarSign, label: 'Ventas' },
-];
+const ROLE_LABELS = {
+  superadmin: 'Super Admin',
+  admin: 'Admin',
+  reception: 'Mostrador'
+};
+
+const getNavItems = (role) => {
+  const items = [
+    { path: '/', icon: LayoutDashboard, label: 'Dashboard', roles: ['superadmin', 'admin'] },
+    { path: '/clients', icon: Users, label: 'Clientes', roles: ['superadmin', 'admin'] },
+    { path: '/calendar', icon: Calendar, label: 'Calendario', roles: ['superadmin', 'admin'] },
+    { path: '/sales', icon: DollarSign, label: 'Ventas', roles: ['superadmin', 'admin'] },
+    { path: '/reception', icon: Monitor, label: 'Mostrador', roles: ['superadmin', 'admin'] },
+    { path: '/user-management', icon: Shield, label: 'Usuarios', roles: ['superadmin'] },
+  ];
+  return items.filter(item => item.roles.includes(role));
+};
 
 export default function Layout({ children }) {
   const { user, logout } = useAuth();
@@ -31,6 +45,8 @@ export default function Layout({ children }) {
     logout();
     navigate('/login');
   };
+
+  const navItems = getNavItems(user?.role || 'admin');
 
   return (
     <div className="min-h-screen bg-pf-background flex">
@@ -67,7 +83,12 @@ export default function Layout({ children }) {
 
         {/* User section */}
         <div className="p-4 border-t border-pf-border">
-          <div className="text-sm text-pf-text-secondary mb-2">{user?.name}</div>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-sm text-pf-text-secondary">{user?.name}</span>
+            <Badge className="text-[10px] px-1.5 py-0 bg-pf-primary/20 text-pf-primary border-pf-primary/30">
+              {ROLE_LABELS[user?.role] || user?.role}
+            </Badge>
+          </div>
           <div className="text-xs text-pf-text-secondary/60 mb-3">{user?.email}</div>
           <Button
             variant="ghost"
@@ -127,7 +148,12 @@ export default function Layout({ children }) {
           })}
         </nav>
         <div className="p-4 border-t border-pf-border absolute bottom-0 left-0 right-0">
-          <div className="text-sm text-pf-text-secondary mb-2">{user?.name}</div>
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-sm text-pf-text-secondary">{user?.name}</span>
+            <Badge className="text-[10px] px-1.5 py-0 bg-pf-primary/20 text-pf-primary border-pf-primary/30">
+              {ROLE_LABELS[user?.role] || user?.role}
+            </Badge>
+          </div>
           <Button
             variant="ghost"
             className="w-full justify-start text-pf-error"
