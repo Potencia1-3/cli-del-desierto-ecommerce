@@ -1,125 +1,75 @@
 # Pump Fit CRM - Product Requirements Document
 
-## Project Overview
-**Name:** Pump Fit CRM - Sistema de Gestión para Electroestimulación
-**Date:** January 25, 2026
-**Status:** MVP Complete
-
 ## Original Problem Statement
-CRM para Pump Fit Electro Stimulation Club donde los clientes puedan agendar sesiones y llevar control de ventas y base de datos de clientes.
+"Quiero un app como CRM para mi negocio donde la gente pueda agendar la sección y también llevar un control de ventas y de base de datos de mis clientes" (I want a CRM-like app for my business where people can book sessions and I can also keep track of sales and my client database).
 
-## User Personas
+## Core Requirements
+- **Packages & Pricing:** Three packages (8, 24, 50 sessions) with rescheduling limits, regular/promotional prices
+- **Booking Rules:** Sessions 18 min, booked in 30-min intervals 9AM-7PM, 2 EMS suits max
+- **Client Onboarding:** Register + $599 inscription fee. Optional $500 nutrition plan. Admin activates profile after payment
+- **Referral System:** Clients refer 3+ contacts for future benefits
+- **Role-Based Access (RBAC):**
+  - Super Admin: Full control, user management
+  - Admin: Manage clients/sales/calendar (no user management)
+  - Reception (Mostrador): Daily sales, client check-in, shift management (corte de turno)
+- **Client Portal:** Register, login, view progress, manage packages, book sessions, submit referrals
+- **Notifications:** WhatsApp session reminders (via ElevenLabs + WhatsApp)
 
-### 1. Administrador/Staff
-- Gestiona clientes, paquetes y sesiones
-- Registra ventas y visualiza reportes
-- Accede al dashboard con métricas del negocio
+## Tech Stack
+- Backend: FastAPI + MongoDB (motor)
+- Frontend: React + Tailwind CSS + Shadcn/UI
+- Auth: JWT with role-based tokens
 
-### 2. Cliente
-- Agenda sus propias sesiones desde el portal
-- Visualiza su información y paquetes activos
-- Ve su historial de sesiones
-
-## Core Requirements (Implemented)
-
-### Business Rules
-- Sesiones de 18 minutos de duración
-- Horario: 9:00 AM - 7:00 PM
-- 6 trajes EMS disponibles
-- Máximo 2 sesiones por semana por cliente
-
-### Paquetes
-| Paquete | Sesiones | Reagendamientos |
-|---------|----------|-----------------|
-| Básico | 8 | 2 |
-| Estándar | 24 | 6 |
-| Premium | 50 | 12 |
-
-## What's Been Implemented
-
-### Backend (FastAPI + MongoDB)
-- [x] Autenticación JWT (admin, staff, client)
-- [x] CRUD de clientes con búsqueda
-- [x] Historial médico de clientes
-- [x] Registro de medidas corporales
-- [x] Sistema de paquetes con control de sesiones
-- [x] Agendamiento de sesiones con validación
-- [x] Control de reagendamientos por paquete
-- [x] Registro de ventas
-- [x] Dashboard con estadísticas
-- [x] Portal de cliente
-
-### Frontend (React + Tailwind + Shadcn)
-- [x] Página de Login con branding Pump Fit
-- [x] Dashboard con métricas en tiempo real
-- [x] Gestión de clientes (lista, perfil, búsqueda)
-- [x] Perfil de cliente con tabs (info, paquetes, sesiones, historial médico, medidas)
-- [x] Calendario semanal con slots de 18 min
-- [x] Página de ventas con resumen y historial
-- [x] Portal de cliente para auto-agendamiento
-- [x] Diseño dark mode con colores corporativos (Magenta #E600FF, Cyan #00E5FF)
-
-## Prioritized Backlog
-
-### P0 (Critical) - Done ✅
-- Login/Auth
-- Dashboard
-- Clientes CRUD
-- Paquetes
-- Sesiones/Calendario
-- Ventas
-
-### P1 (Important) - Future
-- [ ] Notificaciones por email/SMS para recordatorios de sesión
-- [ ] Exportación de reportes a Excel/PDF
-- [ ] Gráficas de progreso de clientes
-- [ ] Integración con WhatsApp Business
-
-### P2 (Nice to have) - Future
-- [ ] App móvil nativa
-- [ ] Modo offline
-- [ ] Integración con pasarelas de pago
-- [ ] Sistema de recompensas/puntos
-- [ ] Encuestas de satisfacción
-
-## Technical Architecture
-
-### Stack
-- **Frontend:** React 19, Tailwind CSS, Shadcn/UI, React Router
-- **Backend:** FastAPI, Motor (async MongoDB), PyJWT
-- **Database:** MongoDB
-- **Auth:** JWT tokens
-
-### API Endpoints
-- `/api/auth/*` - Autenticación
-- `/api/clients/*` - Gestión de clientes
-- `/api/packages/*` - Paquetes de sesiones
-- `/api/sessions/*` - Agendamiento
-- `/api/sales/*` - Ventas
-- `/api/dashboard/*` - Estadísticas
-- `/api/portal/*` - Portal de cliente
+## What's Implemented (Completed)
+- [x] CRM MVP: Backend models, APIs for clients, sales, scheduling
+- [x] Admin Dashboard: Stats, today schedule, calendar view
+- [x] Client CRUD: Create, search, view, edit clients
+- [x] Client Portal: Registration, login, booking, progress tracking, referrals
+- [x] Package System: 4 package types with promo/normal pricing
+- [x] Session Booking: 30-min slots, 2 suits, weekly limit (2/week)
+- [x] Inscription Fee + Nutrition Plan + Profile Activation flow
+- [x] Sales tracking with payment method (cash/card/transfer)
+- [x] Referral system (add, view, update status)
+- [x] **RBAC System (Completed Mar 5, 2026):**
+  - Super Admin, Admin, Reception roles fully implemented
+  - Role-based route protection (frontend)
+  - Conditional sidebar navigation per role
+  - Backend endpoint protection with decorators
+  - User Management page (CRUD for superadmin)
+  - Reception page with shift management (corte de caja)
+  - Auto-redirect: reception -> /reception, client -> /portal
 
 ## Credentials
+- Super Admin: super@pumpfit.com / super123
 - Admin: admin@pumpfit.com / admin123
+- Reception: mostrador@pumpfit.com / mostrador123
+- Client (example): maria.garcia@test.com / test123
 
----
-## Update: January 26, 2026 - Portal de Cliente
+## Upcoming Tasks (P1)
+- [ ] WhatsApp + ElevenLabs integration for session reminders
 
-### New Features Added:
-- **Portal de Cliente** (/cliente y /portal)
-  - Registro de nuevos clientes (crea usuario + perfil automáticamente)
-  - Login exclusivo para clientes
-  - Vista de sesiones: próximas y historial
-  - Vista de progreso: medidas corporales con comparación
-  - Vista de paquetes activos con barra de progreso
-  - Vista de perfil personal
-  - Agendamiento inteligente mostrando solo slots disponibles
+## Future Tasks (P2)
+- [ ] Referral benefits system (rewards for 3+ referrals)
+- [ ] Refactor ClientProfile.js (1200+ lines -> sub-components)
+- [ ] DialogDescription accessibility fix in all dialogs
 
-### API Endpoints Added:
-- `POST /api/portal/register` - Registro de cliente
-- `GET /api/portal/my-progress` - Datos de progreso
-- `GET /api/portal/available-slots` - Slots disponibles por fecha
-
-### Access URLs:
-- Administrador: /login
-- Clientes: /cliente (login/registro) → /portal (dashboard)
+## Architecture
+```
+/app/
+├── backend/
+│   ├── server.py (all backend logic, ~1400 lines)
+│   └── .env
+├── frontend/
+│   └── src/
+│       ├── App.js (routes with role-based protection)
+│       ├── components/Layout.js (conditional nav by role)
+│       ├── context/AuthContext.js
+│       ├── lib/api.js (all API functions)
+│       └── pages/
+│           ├── Dashboard.js, Clients.js, ClientProfile.js
+│           ├── Calendar.js, Sales.js
+│           ├── Reception.js (shift mgmt, daily sales, client check-in)
+│           ├── UserManagement.js (CRUD users, shift history)
+│           ├── ClientPortal.js, ClientLogin.js, Login.js
+└── memory/PRD.md
+```
