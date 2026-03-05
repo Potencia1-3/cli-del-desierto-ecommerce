@@ -12,7 +12,10 @@ import {
   createPackage,
   payInscription,
   addNutritionPlan,
-  activateClient
+  activateClient,
+  getTodaySchedule,
+  createClient,
+  getAllReferrals
 } from '../lib/api';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -31,7 +34,12 @@ import {
   User,
   AlertCircle,
   CheckCircle,
-  Package
+  Package,
+  CalendarDays,
+  UserPlus,
+  Phone,
+  Mail,
+  Share2
 } from 'lucide-react';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -64,12 +72,15 @@ export default function Reception() {
   const [todaySales, setTodaySales] = useState({ sales: [], summary: {} });
   const [currentShift, setCurrentShift] = useState(null);
   const [packageTypes, setPackageTypes] = useState(null);
+  const [todaySchedule, setTodaySchedule] = useState([]);
+  const [referrals, setReferrals] = useState([]);
   const [loading, setLoading] = useState(true);
   
   // Dialogs
   const [shiftStartDialogOpen, setShiftStartDialogOpen] = useState(false);
   const [shiftCloseDialogOpen, setShiftCloseDialogOpen] = useState(false);
   const [clientDialogOpen, setClientDialogOpen] = useState(false);
+  const [newClientDialogOpen, setNewClientDialogOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState(null);
   
   // Forms
@@ -77,6 +88,7 @@ export default function Reception() {
   const [finalCash, setFinalCash] = useState('');
   const [closeNotes, setCloseNotes] = useState('');
   const [saving, setSaving] = useState(false);
+  const [newClient, setNewClient] = useState({ name: '', email: '', phone: '' });
 
   useEffect(() => {
     fetchData();
@@ -91,14 +103,18 @@ export default function Reception() {
 
   const fetchData = async () => {
     try {
-      const [salesRes, shiftRes, typesRes] = await Promise.all([
+      const [salesRes, shiftRes, typesRes, scheduleRes, referralsRes] = await Promise.all([
         getReceptionTodaySales(),
         getCurrentShift(),
-        getPackageTypes()
+        getPackageTypes(),
+        getTodaySchedule(),
+        getAllReferrals()
       ]);
       setTodaySales(salesRes.data);
       setCurrentShift(shiftRes.data);
       setPackageTypes(typesRes.data);
+      setTodaySchedule(scheduleRes.data);
+      setReferrals(referralsRes.data);
       await fetchClients();
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -188,6 +204,25 @@ export default function Reception() {
       }
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCreateClient = async () => {
+    if (!newClient.name || !newClient.email || !newClient.phone) {
+      toast.error('Completa todos los campos');
+      return;
+    }
+    setSaving(true);
+    try {
+      await createClient(newClient);
+      toast.success('Cliente registrado');
+      setNewClientDialogOpen(false);
+      setNewClient({ name: '', email: '', phone: '' });
+      fetchData();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Error al registrar cliente');
     } finally {
       setSaving(false);
     }
@@ -307,28 +342,86 @@ export default function Reception() {
         )}
 
         {/* Main Content Tabs */}
-        <Tabs defaultValue="clients" className="space-y-6">
+        <Tabs defaultValue="agenda" className="space-y-6">
           <TabsList className="bg-pf-surface border border-pf-border">
+            <TabsTrigger value="agenda" className="data-[state=active]:bg-pf-primary data-[state=active]:text-white">
+              <CalendarDays size={16} className="mr-2" />Agenda
+            </TabsTrigger>
             <TabsTrigger value="clients" className="data-[state=active]:bg-pf-primary data-[state=active]:text-white">
               <Users size={16} className="mr-2" />Clientes
+            </TabsTrigger>
+            <TabsTrigger value="referrals" className="data-[state=active]:bg-pf-primary data-[state=active]:text-white">
+              <Share2 size={16} className="mr-2" />Referidos
             </TabsTrigger>
             <TabsTrigger value="sales" className="data-[state=active]:bg-pf-primary data-[state=active]:text-white">
               <DollarSign size={16} className="mr-2" />Ventas de Hoy
             </TabsTrigger>
           </TabsList>
 
+          {/* Agenda Tab */}
+          <TabsContent value="agenda" className="space-y-4">
+            <Card className="glass-card overflow-hidden">
+              <div className="p-4 border-b border-pf-border flex items-center justify-between">
+                <h3 className="font-unbounded text-white">Sesiones de Hoy</h3>
+                <Badge className="bg-pf-primary/20 text-pf-primary border-pf-primary/30">
+                  {todaySchedule.length} sesiones
+                </Badge>
+              </div>
+              {todaySchedule.length === 0 ? (
+                <div className="p-8 text-center">
+                  <CalendarDays className="mx-auto text-pf-text-secondary mb-4" size={48} />
+                  <p className="text-pf-text-secondary">No hay sesiones programadas para hoy</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-pf-border/50">
+                  {todaySchedule.map((session) => (
+                    <div key={session.id} className="p-4 flex items-center justify-between" data-testid={`agenda-session-${session.id}`}>
+                      <div className="flex items-center gap-4">
+                        <div className="text-center min-w-[60px]">
+                          <p className="text-pf-primary font-mono text-lg font-bold">{session.time}</p>
+                          <p className="text-pf-text-secondary text-xs">Traje {session.suit_number}</p>
+                        </div>
+                        <div>
+                          <p className="text-white font-medium">{session.client_name}</p>
+                          <p className="text-pf-text-secondary text-xs">
+                            {session.is_reschedule ? 'Reagendada' : 'Programada'}
+                          </p>
+                        </div>
+                      </div>
+                      <Badge className={
+                        session.status === 'completed' ? 'badge-active' :
+                        session.status === 'cancelled' ? 'badge-error' :
+                        'bg-pf-secondary/20 text-pf-secondary border-pf-secondary/30'
+                      }>
+                        {session.status === 'scheduled' ? 'Pendiente' :
+                         session.status === 'rescheduled' ? 'Reagendada' :
+                         session.status === 'completed' ? 'Completada' : 'Cancelada'}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
+          </TabsContent>
+
           {/* Clients Tab */}
           <TabsContent value="clients" className="space-y-4">
-            {/* Search */}
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-pf-text-secondary" size={20} />
-              <Input
-                placeholder="Buscar cliente por nombre, email o teléfono..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="input-dark pl-12"
-                data-testid="search-clients-reception"
-              />
+            {/* Search + New Client */}
+            <div className="flex gap-3">
+              <div className="relative flex-1">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-pf-text-secondary" size={20} />
+                <Input
+                  placeholder="Buscar cliente por nombre, email o teléfono..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="input-dark pl-12"
+                  data-testid="search-clients-reception"
+                />
+              </div>
+              <Button onClick={() => setNewClientDialogOpen(true)} className="btn-primary whitespace-nowrap" data-testid="new-client-btn">
+                <UserPlus size={18} className="mr-2" />
+                Nuevo Cliente
+              </Button>
             </div>
 
             {/* Clients List */}
@@ -372,6 +465,77 @@ export default function Reception() {
                 ))
               )}
             </div>
+          </TabsContent>
+
+          {/* Referrals Tab */}
+          <TabsContent value="referrals" className="space-y-4">
+            <Card className="glass-card overflow-hidden">
+              <div className="p-4 border-b border-pf-border flex items-center justify-between">
+                <h3 className="font-unbounded text-white">Referidos de Clientes</h3>
+                <Badge className="bg-pf-secondary/20 text-pf-secondary border-pf-secondary/30">
+                  {referrals.length} referidos
+                </Badge>
+              </div>
+              {referrals.length === 0 ? (
+                <div className="p-8 text-center">
+                  <Share2 className="mx-auto text-pf-text-secondary mb-4" size={48} />
+                  <p className="text-pf-text-secondary">No hay referidos registrados</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-pf-border/50">
+                  {referrals.map((ref, idx) => (
+                    <div key={ref.id || idx} className="p-4" data-testid={`referral-item-${ref.id || idx}`}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-pf-secondary/20 flex items-center justify-center">
+                            <User className="text-pf-secondary" size={20} />
+                          </div>
+                          <div>
+                            <p className="text-white font-medium">{ref.name}</p>
+                            <div className="flex items-center gap-3 mt-1">
+                              <span className="text-pf-text-secondary text-sm flex items-center gap-1">
+                                <Phone size={12} /> {ref.phone}
+                              </span>
+                              {ref.email && (
+                                <span className="text-pf-text-secondary text-sm flex items-center gap-1">
+                                  <Mail size={12} /> {ref.email}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-pf-text-secondary text-xs mt-1">
+                              Referido por: <span className="text-pf-primary">{ref.referred_by}</span>
+                            </p>
+                            {ref.notes && (
+                              <p className="text-pf-text-secondary text-xs mt-0.5 italic">{ref.notes}</p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Badge className={
+                            ref.status === 'converted' ? 'badge-active' :
+                            ref.status === 'contacted' ? 'bg-pf-secondary/20 text-pf-secondary border-pf-secondary/30' :
+                            'badge-pending'
+                          }>
+                            {ref.status === 'pending' ? 'Pendiente' :
+                             ref.status === 'contacted' ? 'Contactado' : 'Convertido'}
+                          </Badge>
+                          <a 
+                            href={`https://wa.me/${ref.phone.replace(/\D/g, '')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex"
+                          >
+                            <Button size="sm" className="btn-primary h-8 text-xs" data-testid={`whatsapp-referral-${ref.id || idx}`}>
+                              <Phone size={14} className="mr-1" /> WhatsApp
+                            </Button>
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Card>
           </TabsContent>
 
           {/* Sales Tab */}
@@ -606,16 +770,64 @@ export default function Reception() {
                     Activar Perfil
                   </Button>
                 )}
-
-                <Link to={`/clients/${selectedClient.id}`} className="block">
-                  <Button className="w-full btn-ghost border border-pf-border">
-                    Ver Perfil Completo
-                    <ChevronRight size={18} className="ml-2" />
-                  </Button>
-                </Link>
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* New Client Dialog */}
+      <Dialog open={newClientDialogOpen} onOpenChange={setNewClientDialogOpen}>
+        <DialogContent className="glass-card border-pf-border">
+          <DialogHeader>
+            <DialogTitle className="font-unbounded text-white">Registrar Nuevo Cliente</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <Label className="text-pf-text-secondary">Nombre Completo</Label>
+              <Input
+                value={newClient.name}
+                onChange={(e) => setNewClient({...newClient, name: e.target.value})}
+                placeholder="Nombre del cliente"
+                className="input-dark"
+                data-testid="new-client-name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-pf-text-secondary">Email</Label>
+              <Input
+                type="email"
+                value={newClient.email}
+                onChange={(e) => setNewClient({...newClient, email: e.target.value})}
+                placeholder="correo@ejemplo.com"
+                className="input-dark"
+                data-testid="new-client-email"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-pf-text-secondary">Teléfono</Label>
+              <Input
+                value={newClient.phone}
+                onChange={(e) => setNewClient({...newClient, phone: e.target.value})}
+                placeholder="55 1234 5678"
+                className="input-dark"
+                data-testid="new-client-phone"
+              />
+            </div>
+            <div className="flex gap-3 justify-end pt-4">
+              <Button variant="ghost" onClick={() => setNewClientDialogOpen(false)} className="btn-ghost">
+                Cancelar
+              </Button>
+              <Button 
+                onClick={handleCreateClient} 
+                className="btn-primary" 
+                disabled={saving || !newClient.name || !newClient.email || !newClient.phone}
+                data-testid="save-new-client-btn"
+              >
+                {saving ? 'Registrando...' : 'Registrar Cliente'}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
 
