@@ -52,6 +52,7 @@ export default function ClientProfile() {
   const [client, setClient] = useState(null);
   const [loading, setLoading] = useState(true);
   const [timeSlots, setTimeSlots] = useState([]);
+  const [packageTypes, setPackageTypes] = useState(null);
   
   // Form states
   const [editInfo, setEditInfo] = useState(false);
@@ -74,7 +75,7 @@ export default function ClientProfile() {
   // Package form
   const [packageForm, setPackageForm] = useState({
     package_type: '',
-    price: '',
+    use_promo_price: true,
     notes: ''
   });
   
