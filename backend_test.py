@@ -373,6 +373,142 @@ class PumpFitCRMTester:
         )
         return success
 
+    def test_pay_inscription(self):
+        """Test inscription payment - $599"""
+        if not self.client_id:
+            print("❌ No client ID available for inscription test")
+            return False
+        
+        success, response = self.run_test(
+            "Pay Inscription ($599)",
+            "POST",
+            f"clients/{self.client_id}/pay-inscription?payment_method=cash",
+            200
+        )
+        if success:
+            expected_amount = 599
+            actual_amount = response.get('amount')
+            print(f"   Inscription amount: ${actual_amount} (expected ${expected_amount})")
+            if actual_amount != expected_amount:
+                print(f"   ❌ Amount mismatch!")
+                return False
+        return success
+
+    def test_add_nutrition_plan(self):
+        """Test adding nutrition plan - $500"""
+        if not self.client_id:
+            print("❌ No client ID available for nutrition plan test")
+            return False
+        
+        success, response = self.run_test(
+            "Add Nutrition Plan ($500)",
+            "POST",
+            f"clients/{self.client_id}/nutrition-plan?payment_method=cash",
+            200
+        )
+        if success:
+            expected_amount = 500
+            actual_amount = response.get('amount')
+            print(f"   Nutrition plan amount: ${actual_amount} (expected ${expected_amount})")
+            if actual_amount != expected_amount:
+                print(f"   ❌ Amount mismatch!")
+                return False
+        return success
+
+    def test_activate_client_profile(self):
+        """Test client profile activation by admin"""
+        if not self.client_id:
+            print("❌ No client ID available for activation test")
+            return False
+        
+        success, response = self.run_test(
+            "Activate Client Profile",
+            "POST",
+            f"clients/{self.client_id}/activate",
+            200
+        )
+        return success
+
+    def test_add_referral(self):
+        """Test adding referral contact"""
+        if not self.client_id:
+            print("❌ No client ID available for referral test")
+            return False
+        
+        referral_data = {
+            "name": "Juan Pérez",
+            "phone": "5551234567",
+            "email": "juan.perez@test.com",
+            "notes": "Interesado en bajar de peso"
+        }
+        success, response = self.run_test(
+            "Add Referral Contact",
+            "POST",
+            f"clients/{self.client_id}/referrals",
+            200,
+            data=referral_data
+        )
+        if success and 'referral_id' in response:
+            self.referral_id = response['referral_id']
+            print(f"   Referral ID: {self.referral_id}")
+        return success
+
+    def test_get_referrals(self):
+        """Test getting client referrals"""
+        if not self.client_id:
+            print("❌ No client ID available for referrals test")
+            return False
+        
+        success, response = self.run_test(
+            "Get Client Referrals",
+            "GET",
+            f"clients/{self.client_id}/referrals",
+            200
+        )
+        if success:
+            print(f"   Found {len(response)} referrals")
+        return success
+
+    def test_client_login(self):
+        """Test client login with existing credentials"""
+        success, response = self.run_test(
+            "Client Login",
+            "POST",
+            "auth/login",
+            200,
+            data={"email": "maria.garcia@test.com", "password": "test123"}
+        )
+        if success and 'token' in response:
+            self.client_token = response['token']
+            print(f"   Client token obtained: {self.client_token[:20]}...")
+            return True
+        return False
+
+    def test_client_portal_info(self):
+        """Test client portal info endpoint"""
+        if not self.client_token:
+            print("❌ No client token available for portal test")
+            return False
+        
+        # Temporarily switch to client token
+        original_token = self.token
+        self.token = self.client_token
+        
+        success, response = self.run_test(
+            "Client Portal Info",
+            "GET",
+            "portal/my-info",
+            200
+        )
+        
+        # Restore admin token
+        self.token = original_token
+        
+        if success:
+            profile_active = response.get('profile_active', False)
+            print(f"   Profile active: {profile_active}")
+        return success
+
 def main():
     print("🚀 Starting Pump Fit CRM Backend Tests")
     print("=" * 50)
