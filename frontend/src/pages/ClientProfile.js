@@ -104,6 +104,7 @@ export default function ClientProfile() {
   useEffect(() => {
     fetchClient();
     fetchTimeSlots();
+    fetchPackageTypes();
   }, [id]);
 
   const fetchClient = async () => {
@@ -137,6 +138,77 @@ export default function ClientProfile() {
       setTimeSlots(response.data);
     } catch (error) {
       console.error('Error fetching time slots:', error);
+    }
+  };
+
+  const fetchPackageTypes = async () => {
+    try {
+      const response = await getPackageTypes();
+      setPackageTypes(response.data);
+    } catch (error) {
+      console.error('Error fetching package types:', error);
+    }
+  };
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('es-MX', {
+      style: 'currency',
+      currency: 'MXN',
+      minimumFractionDigits: 0
+    }).format(amount);
+  };
+
+  const handlePayInscription = async () => {
+    setSaving(true);
+    try {
+      await payInscription(id);
+      toast.success('Inscripción pagada');
+      fetchClient();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Error al pagar inscripción');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleAddNutritionPlan = async () => {
+    setSaving(true);
+    try {
+      await addNutritionPlan(id);
+      toast.success('Plan de nutrición agregado');
+      fetchClient();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Error al agregar plan');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleToggleActivation = async () => {
+    setSaving(true);
+    try {
+      if (client.profile_active) {
+        await deactivateClient(id);
+        toast.success('Perfil desactivado');
+      } else {
+        await activateClient(id);
+        toast.success('Perfil activado');
+      }
+      fetchClient();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Error');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleUpdateReferralStatus = async (referralId, status) => {
+    try {
+      await updateReferralStatus(id, referralId, status);
+      toast.success('Estado actualizado');
+      fetchClient();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Error');
     }
   };
 
