@@ -370,6 +370,154 @@ async def add_measurement(client_id: str, measurement: BodyMeasurement, current_
     
     return {"message": "Medida agregada", "id": measurement.id}
 
+# ==================== INSCRIPTION & ACTIVATION ROUTES ====================
+
+@api_router.post("/clients/{client_id}/pay-inscription")
+async def pay_inscription(client_id: str, payment_method: str = "cash", current_user: dict = Depends(require_admin)):
+    """Register inscription payment"""
+    client = await db.clients.find_one({"id": client_id}, {"_id": 0})
+    if not client:
+        raise HTTPException(status_code=404, detail="Cliente no encontrado")
+    
+    if client.get("inscription_paid"):
+        raise HTTPException(status_code=400, detail="La inscripción ya fue pagada")
+    
+    # Update client
+    await db.clients.update_one(
+        {"id": client_id},
+        {"$set": {"inscription_paid": True}}
+    )
+    
+    # Create sale record
+    sale = Sale(
+        client_id=client_id,
+        description="Inscripción",
+        amount=INSCRIPTION_PRICE,
+        payment_method=payment_method,
+        created_by=current_user["id"]
+    )
+    sale_dict = sale.model_dump()
+    sale_dict["created_at"] = sale_dict["created_at"].isoformat()
+    await db.sales.insert_one(sale_dict)
+    
+    return {"message": "Inscripción pagada", "amount": INSCRIPTION_PRICE}
+
+@api_router.post("/clients/{client_id}/nutrition-plan")
+async def add_nutrition_plan(client_id: str, payment_method: str = "cash", current_user: dict = Depends(require_admin)):
+    """Add nutrition plan to client"""
+    client = await db.clients.find_one({"id": client_id}, {"_id": 0})
+    if not client:
+        raise HTTPException(status_code=404, detail="Cliente no encontrado")
+    
+    if client.get("has_nutrition_plan"):
+        raise HTTPException(status_code=400, detail="El cliente ya tiene plan de nutrición")
+    
+    # Update client
+    await db.clients.update_one(
+        {"id": client_id},
+        {"$set": {"has_nutrition_plan": True}}
+    )
+    
+    # Create sale record
+    sale = Sale(
+        client_id=client_id,
+        description="Plan de Nutrición",
+        amount=NUTRITION_PLAN_PRICE,
+        payment_method=payment_method,
+        created_by=current_user["id"]
+    )
+    sale_dict = sale.model_dump()
+    sale_dict["created_at"] = sale_dict["created_at"].isoformat()
+    await db.sales.insert_one(sale_dict)
+    
+    return {"message": "Plan de nutrición agregado", "amount": NUTRITION_PLAN_PRICE}
+
+@api_router.post("/clients/{client_id}/activate")
+async def activate_client_profile(client_id: str, current_user: dict = Depends(require_admin)):
+    """Activate client profile after payment verification"""
+    result = await db.clients.update_one(
+        {"id": client_id},
+        {"$set": {"profile_active": True}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Cliente no encontrado")
+    
+    return {"message": "Perfil activado"}
+
+@api_router.post("/clients/{client_id}/deactivate")
+async def deactivate_client_profile(client_id: str, current_user: dict = Depends(require_admin)):
+    """Deactivate client profile"""
+    result = await db.clients.update_one(
+        {"id": client_id},
+        {"$set": {"profile_active": False}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Cliente no encontrado")
+    
+    return {"message": "Perfil desactivado"}
+
+# ==================== REFERRALS ROUTES ====================
+
+class ReferralCreate(BaseModel):
+    name: str
+    phone: str
+    email: Optional[str] = None
+    notes: str = ""
+
+@api_router.post("/clients/{client_id}/referrals")
+async def add_referral(client_id: str, referral_data: ReferralCreate, current_user: dict = Depends(get_current_user)):
+    """Add a referral (contact recommendation)"""
+    referral = Referral(**referral_data.model_dump())
+    referral_dict = referral.model_dump()
+    referral_dict["created_at"] = referral_dict["created_at"].isoformat()
+    
+    result = await db.clients.update_one(
+        {"id": client_id},
+        {"$push": {"referrals": referral_dict}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Cliente no encontrado")
+    
+    return {"message": "Referido agregado", "referral_id": referral.id}
+
+@api_router.get("/clients/{client_id}/referrals")
+async def get_referrals(client_id: str, current_user: dict = Depends(get_current_user)):
+    """Get client's referrals"""
+    client = await db.clients.find_one({"id": client_id}, {"_id": 0, "referrals": 1})
+    if not client:
+        raise HTTPException(status_code=404, detail="Cliente no encontrado")
+    
+    return client.get("referrals", [])
+
+@api_router.put("/clients/{client_id}/referrals/{referral_id}/status")
+async def update_referral_status(client_id: str, referral_id: str, status: str, current_user: dict = Depends(require_admin)):
+    """Update referral status (pending, contacted, converted)"""
+    if status not in ["pending", "contacted", "converted"]:
+        raise HTTPException(status_code=400, detail="Estado inválido")
+    
+    result = await db.clients.update_one(
+        {"id": client_id, "referrals.id": referral_id},
+        {"$set": {"referrals.$.status": status}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Referido no encontrado")
+    
+    return {"message": f"Estado actualizado a {status}"}
+
+@api_router.get("/referrals/all")
+async def get_all_referrals(current_user: dict = Depends(require_admin)):
+    """Get all referrals from all clients for admin follow-up"""
+    clients = await db.clients.find({"referrals": {"$exists": True, "$ne": []}}, {"_id": 0, "id": 1, "name": 1, "referrals": 1}).to_list(1000)
+    
+    all_referrals = []
+    for client in clients:
+        for referral in client.get("referrals", []):
+            referral["referred_by"] = client["name"]
+            referral["referred_by_id"] = client["id"]
+            all_referrals.append(referral)
+    
+    return all_referrals
+
 # ==================== PACKAGE ROUTES ====================
 
 @api_router.get("/packages/types")
