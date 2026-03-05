@@ -1054,26 +1054,341 @@ async def get_available_slots(date: str, current_user: dict = Depends(get_curren
 
 @api_router.post("/init/admin")
 async def create_initial_admin():
-    """Create initial admin user if none exists"""
-    existing = await db.users.find_one({"role": "admin"})
+    """Create initial superadmin user if none exists"""
+    existing = await db.users.find_one({"role": "superadmin"})
     if existing:
-        return {"message": "Admin ya existe"}
+        return {"message": "Super Admin ya existe"}
     
-    admin = User(
-        email="admin@pumpfit.com",
-        name="Administrador",
-        role="admin"
+    # Create superadmin
+    superadmin = User(
+        email="super@pumpfit.com",
+        name="Super Administrador",
+        role="superadmin"
     )
-    admin_dict = admin.model_dump()
-    admin_dict["password_hash"] = hash_password("admin123")
-    admin_dict["created_at"] = admin_dict["created_at"].isoformat()
+    superadmin_dict = superadmin.model_dump()
+    superadmin_dict["password_hash"] = hash_password("super123")
+    superadmin_dict["created_at"] = superadmin_dict["created_at"].isoformat()
+    await db.users.insert_one(superadmin_dict)
     
-    await db.users.insert_one(admin_dict)
-    return {"message": "Admin creado", "email": "admin@pumpfit.com", "password": "admin123"}
+    # Create admin
+    admin_exists = await db.users.find_one({"role": "admin"})
+    if not admin_exists:
+        admin = User(
+            email="admin@pumpfit.com",
+            name="Administrador",
+            role="admin"
+        )
+        admin_dict = admin.model_dump()
+        admin_dict["password_hash"] = hash_password("admin123")
+        admin_dict["created_at"] = admin_dict["created_at"].isoformat()
+        await db.users.insert_one(admin_dict)
+    
+    # Create reception
+    reception_exists = await db.users.find_one({"role": "reception"})
+    if not reception_exists:
+        reception = User(
+            email="mostrador@pumpfit.com",
+            name="Mostrador",
+            role="reception"
+        )
+        reception_dict = reception.model_dump()
+        reception_dict["password_hash"] = hash_password("mostrador123")
+        reception_dict["created_at"] = reception_dict["created_at"].isoformat()
+        await db.users.insert_one(reception_dict)
+    
+    return {
+        "message": "Usuarios creados",
+        "users": [
+            {"email": "super@pumpfit.com", "password": "super123", "role": "superadmin"},
+            {"email": "admin@pumpfit.com", "password": "admin123", "role": "admin"},
+            {"email": "mostrador@pumpfit.com", "password": "mostrador123", "role": "reception"}
+        ]
+    }
+
+# ==================== SHIFT/TURN ROUTES (Corte de Caja) ====================
+
+class ShiftStart(BaseModel):
+    starting_cash: float = 0
+
+class ShiftClose(BaseModel):
+    final_cash: float
+    notes: str = ""
+
+@api_router.post("/shifts/start")
+async def start_shift(data: ShiftStart, current_user: dict = Depends(require_admin)):
+    """Start a new shift for reception"""
+    # Check if user has an open shift
+    open_shift = await db.shifts.find_one({
+        "user_id": current_user["id"],
+        "status": "open"
+    })
+    if open_shift:
+        raise HTTPException(status_code=400, detail="Ya tienes un turno abierto. Ciérralo primero.")
+    
+    shift = Shift(
+        user_id=current_user["id"],
+        user_name=current_user["name"],
+        starting_cash=data.starting_cash
+    )
+    shift_dict = shift.model_dump()
+    shift_dict["start_time"] = shift_dict["start_time"].isoformat()
+    
+    await db.shifts.insert_one(shift_dict)
+    return {"message": "Turno iniciado", "shift_id": shift.id, "start_time": shift_dict["start_time"]}
+
+@api_router.get("/shifts/current")
+async def get_current_shift(current_user: dict = Depends(require_admin)):
+    """Get current open shift for user"""
+    shift = await db.shifts.find_one({
+        "user_id": current_user["id"],
+        "status": "open"
+    }, {"_id": 0})
+    
+    if not shift:
+        return {"has_open_shift": False}
+    
+    # Calculate sales during this shift
+    start_time = shift["start_time"]
+    sales = await db.sales.find({
+        "created_at": {"$gte": start_time},
+        "created_by": current_user["id"]
+    }, {"_id": 0}).to_list(1000)
+    
+    total = sum(s["amount"] for s in sales)
+    cash = sum(s["amount"] for s in sales if s["payment_method"] == "cash")
+    card = sum(s["amount"] for s in sales if s["payment_method"] == "card")
+    transfer = sum(s["amount"] for s in sales if s["payment_method"] == "transfer")
+    
+    return {
+        "has_open_shift": True,
+        "shift": shift,
+        "sales_summary": {
+            "total": total,
+            "count": len(sales),
+            "cash": cash,
+            "card": card,
+            "transfer": transfer,
+            "expected_cash": shift["starting_cash"] + cash
+        },
+        "sales": sales
+    }
+
+@api_router.post("/shifts/close")
+async def close_shift(data: ShiftClose, current_user: dict = Depends(require_admin)):
+    """Close current shift and make cash register cut"""
+    shift = await db.shifts.find_one({
+        "user_id": current_user["id"],
+        "status": "open"
+    }, {"_id": 0})
+    
+    if not shift:
+        raise HTTPException(status_code=400, detail="No tienes un turno abierto")
+    
+    # Calculate sales during this shift
+    start_time = shift["start_time"]
+    sales = await db.sales.find({
+        "created_at": {"$gte": start_time},
+        "created_by": current_user["id"]
+    }, {"_id": 0}).to_list(1000)
+    
+    total = sum(s["amount"] for s in sales)
+    cash = sum(s["amount"] for s in sales if s["payment_method"] == "cash")
+    card = sum(s["amount"] for s in sales if s["payment_method"] == "card")
+    transfer = sum(s["amount"] for s in sales if s["payment_method"] == "transfer")
+    
+    expected_cash = shift["starting_cash"] + cash
+    difference = data.final_cash - expected_cash
+    
+    # Update shift
+    await db.shifts.update_one(
+        {"id": shift["id"]},
+        {"$set": {
+            "end_time": datetime.now(timezone.utc).isoformat(),
+            "sales_total": total,
+            "sales_count": len(sales),
+            "cash_sales": cash,
+            "card_sales": card,
+            "transfer_sales": transfer,
+            "final_cash": data.final_cash,
+            "difference": difference,
+            "notes": data.notes,
+            "status": "closed"
+        }}
+    )
+    
+    return {
+        "message": "Turno cerrado - Corte realizado",
+        "shift_summary": {
+            "start_time": shift["start_time"],
+            "end_time": datetime.now(timezone.utc).isoformat(),
+            "starting_cash": shift["starting_cash"],
+            "sales_total": total,
+            "sales_count": len(sales),
+            "cash_sales": cash,
+            "card_sales": card,
+            "transfer_sales": transfer,
+            "expected_cash": expected_cash,
+            "final_cash": data.final_cash,
+            "difference": difference
+        }
+    }
+
+@api_router.get("/shifts/history")
+async def get_shift_history(user_id: Optional[str] = None, current_user: dict = Depends(require_admin)):
+    """Get shift history - admins see all, reception sees own"""
+    query = {}
+    if current_user["role"] == "reception":
+        query["user_id"] = current_user["id"]
+    elif user_id:
+        query["user_id"] = user_id
+    
+    shifts = await db.shifts.find(query, {"_id": 0}).sort("start_time", -1).to_list(100)
+    return shifts
+
+@api_router.get("/shifts/{shift_id}")
+async def get_shift_detail(shift_id: str, current_user: dict = Depends(require_admin)):
+    """Get detailed shift info"""
+    shift = await db.shifts.find_one({"id": shift_id}, {"_id": 0})
+    if not shift:
+        raise HTTPException(status_code=404, detail="Turno no encontrado")
+    
+    # Reception can only see their own shifts
+    if current_user["role"] == "reception" and shift["user_id"] != current_user["id"]:
+        raise HTTPException(status_code=403, detail="Acceso denegado")
+    
+    # Get sales for this shift
+    if shift["status"] == "closed":
+        sales = await db.sales.find({
+            "created_at": {"$gte": shift["start_time"], "$lte": shift["end_time"]},
+            "created_by": shift["user_id"]
+        }, {"_id": 0}).to_list(1000)
+    else:
+        sales = await db.sales.find({
+            "created_at": {"$gte": shift["start_time"]},
+            "created_by": shift["user_id"]
+        }, {"_id": 0}).to_list(1000)
+    
+    return {**shift, "sales": sales}
+
+# ==================== USER MANAGEMENT (Superadmin) ====================
+
+@api_router.get("/users")
+async def get_users(current_user: dict = Depends(require_admin_or_above)):
+    """Get all staff users (not clients)"""
+    users = await db.users.find(
+        {"role": {"$in": ["superadmin", "admin", "reception"]}},
+        {"_id": 0, "password_hash": 0}
+    ).to_list(100)
+    return users
+
+@api_router.post("/users")
+async def create_user(user_data: UserCreate, current_user: dict = Depends(require_superadmin)):
+    """Create a new staff user (superadmin only)"""
+    existing = await db.users.find_one({"email": user_data.email})
+    if existing:
+        raise HTTPException(status_code=400, detail="Email ya registrado")
+    
+    if user_data.role not in ["admin", "reception"]:
+        raise HTTPException(status_code=400, detail="Solo puedes crear admin o reception")
+    
+    user = User(
+        email=user_data.email,
+        name=user_data.name,
+        phone=user_data.phone,
+        role=user_data.role
+    )
+    user_dict = user.model_dump()
+    user_dict["password_hash"] = hash_password(user_data.password)
+    user_dict["created_at"] = user_dict["created_at"].isoformat()
+    
+    await db.users.insert_one(user_dict)
+    return {"message": "Usuario creado", "user_id": user.id}
+
+@api_router.put("/users/{user_id}")
+async def update_user(user_id: str, name: Optional[str] = None, phone: Optional[str] = None, role: Optional[str] = None, current_user: dict = Depends(require_superadmin)):
+    """Update user (superadmin only)"""
+    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    
+    if user["role"] == "superadmin" and current_user["id"] != user_id:
+        raise HTTPException(status_code=403, detail="No puedes modificar a otro superadmin")
+    
+    update_data = {}
+    if name:
+        update_data["name"] = name
+    if phone:
+        update_data["phone"] = phone
+    if role and role in ["admin", "reception"]:
+        update_data["role"] = role
+    
+    if update_data:
+        await db.users.update_one({"id": user_id}, {"$set": update_data})
+    
+    return {"message": "Usuario actualizado"}
+
+@api_router.delete("/users/{user_id}")
+async def delete_user(user_id: str, current_user: dict = Depends(require_superadmin)):
+    """Delete user (superadmin only)"""
+    user = await db.users.find_one({"id": user_id}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    
+    if user["role"] == "superadmin":
+        raise HTTPException(status_code=403, detail="No puedes eliminar un superadmin")
+    
+    await db.users.delete_one({"id": user_id})
+    return {"message": "Usuario eliminado"}
+
+@api_router.put("/users/{user_id}/password")
+async def change_user_password(user_id: str, new_password: str, current_user: dict = Depends(require_superadmin)):
+    """Change user password (superadmin only)"""
+    result = await db.users.update_one(
+        {"id": user_id},
+        {"$set": {"password_hash": hash_password(new_password)}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Usuario no encontrado")
+    return {"message": "Contraseña actualizada"}
+
+# ==================== RECEPTION SPECIFIC ROUTES ====================
+
+@api_router.get("/reception/today-sales")
+async def get_reception_today_sales(current_user: dict = Depends(require_admin)):
+    """Get today's sales for reception view"""
+    today_start = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+    
+    # If reception, only show their sales
+    query = {"created_at": {"$gte": today_start}}
+    if current_user["role"] == "reception":
+        query["created_by"] = current_user["id"]
+    
+    sales = await db.sales.find(query, {"_id": 0}).sort("created_at", -1).to_list(1000)
+    
+    # Enrich with client names
+    for sale in sales:
+        client = await db.clients.find_one({"id": sale["client_id"]}, {"_id": 0, "name": 1})
+        sale["client_name"] = client["name"] if client else "Desconocido"
+    
+    total = sum(s["amount"] for s in sales)
+    cash = sum(s["amount"] for s in sales if s["payment_method"] == "cash")
+    card = sum(s["amount"] for s in sales if s["payment_method"] == "card")
+    transfer = sum(s["amount"] for s in sales if s["payment_method"] == "transfer")
+    
+    return {
+        "sales": sales,
+        "summary": {
+            "total": total,
+            "count": len(sales),
+            "cash": cash,
+            "card": card,
+            "transfer": transfer
+        }
+    }
 
 @api_router.get("/")
 async def root():
-    return {"message": "Pump Fit CRM API"}
+    return {"message": "Pump Fit CRM API", "roles": list(ROLES.keys())}
 
 # Include router
 app.include_router(api_router)
