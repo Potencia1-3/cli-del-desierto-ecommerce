@@ -997,11 +997,11 @@ async def get_available_slots(date: str, current_user: dict = Depends(get_curren
         "status": {"$in": ["scheduled", "rescheduled"]}
     }, {"_id": 0, "time": 1, "suit_number": 1}).to_list(1000)
     
-    # Create availability map
+    # Create availability map (only 2 suits)
     availability = {}
     for slot in TIME_SLOTS:
         suits_booked = [s["suit_number"] for s in booked if s["time"] == slot]
-        available_suits = [i for i in range(1, 7) if i not in suits_booked]
+        available_suits = [i for i in range(1, NUM_SUITS + 1) if i not in suits_booked]
         if available_suits:
             availability[slot] = available_suits
     
