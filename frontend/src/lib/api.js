@@ -129,3 +129,44 @@ export const registerClient = (data) =>
 // Init
 export const initAdmin = () => 
   axios.post(`${API}/init/admin`);
+
+// Shifts (Corte de Caja)
+export const startShift = (startingCash) => 
+  axios.post(`${API}/shifts/start`, { starting_cash: startingCash });
+
+export const getCurrentShift = () => 
+  axios.get(`${API}/shifts/current`);
+
+export const closeShift = (finalCash, notes = '') => 
+  axios.post(`${API}/shifts/close`, { final_cash: finalCash, notes });
+
+export const getShiftHistory = (userId = null) => 
+  axios.get(`${API}/shifts/history${userId ? `?user_id=${userId}` : ''}`);
+
+export const getShiftDetail = (shiftId) => 
+  axios.get(`${API}/shifts/${shiftId}`);
+
+// Reception
+export const getReceptionTodaySales = () => 
+  axios.get(`${API}/reception/today-sales`);
+
+// User Management (Superadmin)
+export const getUsers = () => 
+  axios.get(`${API}/users`);
+
+export const createUser = (data) => 
+  axios.post(`${API}/users`, data);
+
+export const updateUser = (userId, data) => {
+  const params = new URLSearchParams();
+  if (data.name) params.append('name', data.name);
+  if (data.phone) params.append('phone', data.phone);
+  if (data.role) params.append('role', data.role);
+  return axios.put(`${API}/users/${userId}?${params.toString()}`);
+};
+
+export const deleteUser = (userId) => 
+  axios.delete(`${API}/users/${userId}`);
+
+export const changeUserPassword = (userId, newPassword) => 
+  axios.put(`${API}/users/${userId}/password?new_password=${encodeURIComponent(newPassword)}`);
