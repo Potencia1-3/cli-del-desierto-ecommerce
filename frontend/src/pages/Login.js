@@ -116,7 +116,7 @@ export default function Login() {
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="admin@pumpfit.com"
+                    placeholder="correo@ejemplo.com"
                     className="input-dark pl-12"
                     required
                     data-testid="login-email"
@@ -157,11 +157,6 @@ export default function Login() {
               </Button>
             </form>
 
-            <div className="mt-6 p-4 bg-pf-surface rounded-sm border border-pf-border">
-              <p className="text-xs text-pf-text-secondary text-center">
-                <span className="text-pf-secondary">Demo:</span> admin@pumpfit.com / admin123
-              </p>
-            </div>
           </div>
         </div>
       </div>
