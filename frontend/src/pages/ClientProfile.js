@@ -548,8 +548,11 @@ export default function ClientProfile() {
       </div>
 
       {/* Tabs */}
-      <Tabs defaultValue="info" className="space-y-6">
-        <TabsList className="bg-pf-surface border border-pf-border">
+      <Tabs defaultValue="admin" className="space-y-6">
+        <TabsList className="bg-pf-surface border border-pf-border overflow-x-auto">
+          <TabsTrigger value="admin" className="data-[state=active]:bg-pf-primary data-[state=active]:text-white">
+            <DollarSign size={16} className="mr-2" />Administrar
+          </TabsTrigger>
           <TabsTrigger value="info" className="data-[state=active]:bg-pf-primary data-[state=active]:text-white">
             <User size={16} className="mr-2" />Información
           </TabsTrigger>
@@ -559,6 +562,9 @@ export default function ClientProfile() {
           <TabsTrigger value="sessions" className="data-[state=active]:bg-pf-primary data-[state=active]:text-white">
             <Calendar size={16} className="mr-2" />Sesiones
           </TabsTrigger>
+          <TabsTrigger value="referrals" className="data-[state=active]:bg-pf-primary data-[state=active]:text-white">
+            <Users size={16} className="mr-2" />Referidos
+          </TabsTrigger>
           <TabsTrigger value="medical" className="data-[state=active]:bg-pf-primary data-[state=active]:text-white">
             <Activity size={16} className="mr-2" />Historial Médico
           </TabsTrigger>
@@ -566,6 +572,103 @@ export default function ClientProfile() {
             <Ruler size={16} className="mr-2" />Medidas
           </TabsTrigger>
         </TabsList>
+
+        {/* Admin Tab */}
+        <TabsContent value="admin">
+          <div className="space-y-6">
+            {/* Status Cards */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Card className={`glass-card p-4 ${client?.profile_active ? 'border-green-500/30' : 'border-pf-warning/30'}`}>
+                <p className="text-pf-text-secondary text-xs mb-1">Estado del Perfil</p>
+                <p className={`font-medium ${client?.profile_active ? 'text-green-500' : 'text-pf-warning'}`}>
+                  {client?.profile_active ? '✓ Activo' : '⏳ Pendiente'}
+                </p>
+              </Card>
+              <Card className={`glass-card p-4 ${client?.inscription_paid ? 'border-green-500/30' : 'border-pf-error/30'}`}>
+                <p className="text-pf-text-secondary text-xs mb-1">Inscripción</p>
+                <p className={`font-medium ${client?.inscription_paid ? 'text-green-500' : 'text-pf-error'}`}>
+                  {client?.inscription_paid ? '✓ Pagada' : '✗ Pendiente'}
+                </p>
+              </Card>
+              <Card className={`glass-card p-4 ${client?.has_nutrition_plan ? 'border-green-500/30' : 'border-pf-border'}`}>
+                <p className="text-pf-text-secondary text-xs mb-1">Plan Nutrición</p>
+                <p className={`font-medium ${client?.has_nutrition_plan ? 'text-green-500' : 'text-pf-text-secondary'}`}>
+                  {client?.has_nutrition_plan ? '✓ Incluido' : 'No incluido'}
+                </p>
+              </Card>
+              <Card className="glass-card p-4">
+                <p className="text-pf-text-secondary text-xs mb-1">Referidos</p>
+                <p className="text-white font-medium">{client?.referrals?.length || 0} / 3</p>
+              </Card>
+            </div>
+
+            {/* Actions */}
+            <Card className="glass-card p-6">
+              <h3 className="font-unbounded text-lg text-white mb-6">Acciones de Administrador</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Inscription */}
+                <div className="bg-pf-surface p-4 rounded-sm border border-pf-border">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-white font-medium">Inscripción</p>
+                      <p className="text-pf-primary font-mono text-lg">{formatCurrency(packageTypes?.inscription_price || 599)}</p>
+                    </div>
+                    <Button
+                      onClick={handlePayInscription}
+                      disabled={client?.inscription_paid || saving}
+                      className={client?.inscription_paid ? 'btn-ghost opacity-50' : 'btn-primary'}
+                      data-testid="pay-inscription-btn"
+                    >
+                      {client?.inscription_paid ? 'Pagada' : 'Cobrar'}
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Nutrition Plan */}
+                <div className="bg-pf-surface p-4 rounded-sm border border-pf-border">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-white font-medium">Plan de Nutrición</p>
+                      <p className="text-pf-secondary font-mono text-lg">{formatCurrency(packageTypes?.nutrition_plan_price || 500)}</p>
+                    </div>
+                    <Button
+                      onClick={handleAddNutritionPlan}
+                      disabled={client?.has_nutrition_plan || saving}
+                      className={client?.has_nutrition_plan ? 'btn-ghost opacity-50' : 'btn-outline'}
+                      data-testid="add-nutrition-btn"
+                    >
+                      <Apple size={16} className="mr-2" />
+                      {client?.has_nutrition_plan ? 'Incluido' : 'Agregar'}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Profile Activation */}
+              <div className="mt-6 pt-6 border-t border-pf-border">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-white font-medium">Activación del Perfil</p>
+                    <p className="text-pf-text-secondary text-sm">
+                      {client?.profile_active 
+                        ? 'El cliente puede agendar sesiones'
+                        : 'El cliente NO puede agendar hasta activar su perfil'}
+                    </p>
+                  </div>
+                  <Button
+                    onClick={handleToggleActivation}
+                    disabled={saving}
+                    className={client?.profile_active ? 'bg-pf-error hover:bg-pf-error/80 text-white' : 'btn-primary'}
+                    data-testid="toggle-activation-btn"
+                  >
+                    <Power size={16} className="mr-2" />
+                    {client?.profile_active ? 'Desactivar' : 'Activar Perfil'}
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          </div>
+        </TabsContent>
 
         {/* Info Tab */}
         <TabsContent value="info">
