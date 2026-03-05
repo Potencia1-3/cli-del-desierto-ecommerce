@@ -298,8 +298,8 @@ export default function Calendar() {
                       key={dayIndex} 
                       className="border-l border-pf-border/50 p-1 min-h-[80px] bg-pf-background"
                     >
-                      <div className="grid grid-cols-3 gap-1 h-full">
-                        {SUITS.slice(0, 3).map((suit) => {
+                      <div className="grid grid-cols-2 gap-1 h-full">
+                        {SUITS.map((suit) => {
                           const slotSessions = getSessionsForSlot(date, time, suit);
                           const session = slotSessions[0];
                           const isBooked = !!session;
