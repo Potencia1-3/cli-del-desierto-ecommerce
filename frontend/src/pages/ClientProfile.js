@@ -398,25 +398,42 @@ export default function ClientProfile() {
                       <SelectValue placeholder="Seleccionar paquete" />
                     </SelectTrigger>
                     <SelectContent className="bg-pf-surface border-pf-border">
-                      {PACKAGE_OPTIONS.map((opt) => (
-                        <SelectItem key={opt.value} value={opt.value} className="text-white hover:bg-pf-primary/20">
-                          {opt.label} ({opt.reschedules} reagendamientos)
+                      {packageTypes?.packages && Object.entries(packageTypes.packages).map(([key, pkg]) => (
+                        <SelectItem key={key} value={key} className="text-white hover:bg-pf-primary/20">
+                          {pkg.name} - {pkg.duration} ({pkg.max_reschedules} reagendamientos)
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="space-y-2">
-                  <Label className="text-pf-text-secondary">Precio (MXN)</Label>
-                  <Input
-                    type="number"
-                    value={packageForm.price}
-                    onChange={(e) => setPackageForm({...packageForm, price: e.target.value})}
-                    className="input-dark"
-                    placeholder="0.00"
-                    data-testid="package-price-input"
-                  />
-                </div>
+                {packageForm.package_type && packageTypes?.packages?.[packageForm.package_type] && (
+                  <div className="bg-pf-surface p-4 rounded-sm">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-pf-text-secondary">Precio:</span>
+                      <div className="text-right">
+                        <span className="text-pf-primary text-xl font-unbounded">
+                          {formatCurrency(packageForm.use_promo_price 
+                            ? packageTypes.packages[packageForm.package_type].promo_price 
+                            : packageTypes.packages[packageForm.package_type].normal_price)}
+                        </span>
+                        {packageForm.use_promo_price && (
+                          <span className="text-pf-text-secondary text-sm line-through ml-2">
+                            {formatCurrency(packageTypes.packages[packageForm.package_type].normal_price)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={packageForm.use_promo_price}
+                        onChange={(e) => setPackageForm({...packageForm, use_promo_price: e.target.checked})}
+                        className="w-4 h-4 accent-pf-primary"
+                      />
+                      <span className="text-pf-secondary text-sm">Aplicar precio promocional</span>
+                    </label>
+                  </div>
+                )}
                 <div className="space-y-2">
                   <Label className="text-pf-text-secondary">Notas</Label>
                   <Textarea
@@ -430,7 +447,7 @@ export default function ClientProfile() {
                   <Button variant="ghost" onClick={() => setPackageDialogOpen(false)} className="btn-ghost">
                     Cancelar
                   </Button>
-                  <Button onClick={handleCreatePackage} className="btn-primary" disabled={saving} data-testid="save-package-btn">
+                  <Button onClick={handleCreatePackage} className="btn-primary" disabled={saving || !packageForm.package_type} data-testid="save-package-btn">
                     {saving ? 'Guardando...' : 'Crear Paquete'}
                   </Button>
                 </div>
