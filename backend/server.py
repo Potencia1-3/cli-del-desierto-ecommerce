@@ -429,7 +429,7 @@ async def get_package(package_id: str, current_user: dict = Depends(get_current_
 # ==================== SESSION ROUTES ====================
 
 def get_time_slots():
-    """Generate 18-minute slots from 9:00 to 19:00"""
+    """Generate 30-minute slots from 9:00 to 19:00"""
     slots = []
     start_hour = 9
     end_hour = 19
@@ -438,7 +438,7 @@ def get_time_slots():
     
     while current < end:
         slots.append(current.strftime("%H:%M"))
-        current += timedelta(minutes=18)
+        current += timedelta(minutes=SLOT_INTERVAL_MINUTES)
     
     return slots
 
@@ -454,9 +454,14 @@ async def create_session(session_data: SessionCreate, current_user: dict = Depen
     if session_data.time not in TIME_SLOTS:
         raise HTTPException(status_code=400, detail="Horario inválido")
     
-    # Validate suit number
-    if session_data.suit_number < 1 or session_data.suit_number > 6:
-        raise HTTPException(status_code=400, detail="Número de traje inválido (1-6)")
+    # Validate suit number (only 2 suits)
+    if session_data.suit_number < 1 or session_data.suit_number > NUM_SUITS:
+        raise HTTPException(status_code=400, detail=f"Número de traje inválido (1-{NUM_SUITS})")
+    
+    # Check if client profile is active
+    client = await db.clients.find_one({"id": session_data.client_id}, {"_id": 0})
+    if client and not client.get("profile_active", False):
+        raise HTTPException(status_code=400, detail="Tu perfil no está activo. Contacta al administrador para activarlo después del pago.")
     
     # Check if slot is available
     existing = await db.sessions.find_one({
