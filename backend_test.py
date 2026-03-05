@@ -255,7 +255,7 @@ class PumpFitCRMTester:
         return success
 
     def test_create_session(self):
-        """Test session creation"""
+        """Test session creation - should validate only 2 suits available"""
         if not self.client_id or not self.package_id:
             print("❌ No client or package ID available for session test")
             return False
@@ -271,7 +271,7 @@ class PumpFitCRMTester:
             "suit_number": 1
         }
         success, response = self.run_test(
-            "Create Session",
+            "Create Session (Suit 1)",
             "POST",
             "sessions",
             200,
@@ -280,7 +280,24 @@ class PumpFitCRMTester:
         if success and 'session_id' in response:
             self.session_id = response['session_id']
             print(f"   Session ID: {self.session_id}")
-        return success
+        
+        # Test invalid suit number (should only allow 1-2)
+        invalid_session_data = {
+            "client_id": self.client_id,
+            "package_id": self.package_id,
+            "date": tomorrow,
+            "time": "09:30",
+            "suit_number": 3  # Invalid - only 2 suits available
+        }
+        invalid_success, invalid_response = self.run_test(
+            "Create Session (Invalid Suit 3)",
+            "POST",
+            "sessions",
+            400,  # Should fail
+            data=invalid_session_data
+        )
+        
+        return success and invalid_success
 
     def test_get_sessions(self):
         """Test get sessions"""
