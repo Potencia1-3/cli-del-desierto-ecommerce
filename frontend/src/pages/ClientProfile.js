@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { getClient, updateClient, updateMedicalHistory, addMeasurement, createPackage, createSession, getTimeSlots, completeSession, cancelSession } from '../lib/api';
+import { getClient, updateClient, updateMedicalHistory, addMeasurement, createPackage, createSession, getTimeSlots, completeSession, cancelSession, payInscription, addNutritionPlan, activateClient, deactivateClient, getPackageTypes, updateReferralStatus } from '../lib/api';
 import { 
   ArrowLeft, 
   User, 
@@ -15,7 +15,11 @@ import {
   AlertCircle,
   Check,
   X,
-  Clock
+  Clock,
+  DollarSign,
+  Apple,
+  Users,
+  Power
 } from 'lucide-react';
 import { Card } from '../components/ui/card';
 import { Button } from '../components/ui/button';
@@ -40,11 +44,7 @@ import {
 } from '../components/ui/select';
 import { toast } from 'sonner';
 
-const PACKAGE_OPTIONS = [
-  { value: '8', label: '8 Sesiones', sessions: 8, reschedules: 2 },
-  { value: '24', label: '24 Sesiones', sessions: 24, reschedules: 6 },
-  { value: '50', label: '50 Sesiones', sessions: 50, reschedules: 12 },
-];
+const NUM_SUITS = 2; // Only 2 suits available
 
 export default function ClientProfile() {
   const { id } = useParams();
