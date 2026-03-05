@@ -85,6 +85,15 @@ class ClientUpdate(BaseModel):
     emergency_contact: Optional[str] = None
     emergency_phone: Optional[str] = None
 
+class Referral(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    name: str
+    phone: str
+    email: Optional[str] = None
+    notes: str = ""
+    status: str = "pending"  # pending, contacted, converted
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
 class Client(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -97,20 +106,59 @@ class Client(BaseModel):
     emergency_phone: Optional[str] = None
     medical_history: ClientMedicalHistory = Field(default_factory=ClientMedicalHistory)
     measurements: List[BodyMeasurement] = []
+    referrals: List[Referral] = []
+    has_nutrition_plan: bool = False
+    inscription_paid: bool = False
+    profile_active: bool = False  # Admin must activate after payment
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     is_active: bool = True
 
-# Package Types
+# Package Types with real prices
 PACKAGE_TYPES = {
-    "8": {"sessions": 8, "max_reschedules": 2, "price": 0, "name": "Paquete 8 Sesiones"},
-    "24": {"sessions": 24, "max_reschedules": 6, "price": 0, "name": "Paquete 24 Sesiones"},
-    "50": {"sessions": 50, "max_reschedules": 12, "price": 0, "name": "Paquete 50 Sesiones"},
+    "8": {
+        "sessions": 8, 
+        "max_reschedules": 2, 
+        "duration": "1 mes",
+        "normal_price": 4000, 
+        "promo_price": 2700, 
+        "name": "Paquete 8 Sesiones"
+    },
+    "24": {
+        "sessions": 24, 
+        "max_reschedules": 6, 
+        "duration": "3 meses",
+        "normal_price": 11000, 
+        "promo_price": 5700, 
+        "name": "Paquete 24 Sesiones"
+    },
+    "50": {
+        "sessions": 50, 
+        "max_reschedules": 12, 
+        "duration": "6 meses",
+        "normal_price": 18000, 
+        "promo_price": 10100, 
+        "name": "Paquete 50 Sesiones"
+    },
+    "annual": {
+        "sessions": 104, 
+        "max_reschedules": 24, 
+        "duration": "12 meses",
+        "normal_price": 31500, 
+        "promo_price": 18000, 
+        "name": "Paquete Anual"
+    },
 }
+
+# Fixed prices
+INSCRIPTION_PRICE = 599
+NUTRITION_PLAN_PRICE = 500
+NUM_SUITS = 2  # Only 2 suits available
+SLOT_INTERVAL_MINUTES = 30  # 30 minute intervals for scheduling
 
 class PackageCreate(BaseModel):
     client_id: str
-    package_type: str  # "8", "24", "50"
-    price: float
+    package_type: str  # "8", "24", "50", "annual"
+    use_promo_price: bool = True
     notes: str = ""
 
 class Package(BaseModel):
